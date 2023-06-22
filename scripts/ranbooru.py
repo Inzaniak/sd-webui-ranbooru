@@ -107,7 +107,7 @@ class Script(scripts.Script):
             }
             bad_tags = []
             if remove_bad_tags:
-                bad_tags = ['watermark','text','english_text','speech_bubble','signature','artist_name','censored','bar_censor','translation','twitter_username',"twitter_logo",'patreon_username','commentary_request','tagme','commentary','character_name','mosaic_censoring']
+                bad_tags = ['watermark','text','english_text','speech_bubble','signature','artist_name','censored','bar_censor','translation','twitter_username',"twitter_logo",'patreon_username','commentary_request','tagme','commentary','character_name','mosaic_censoring','instagram_username','text_focus','english_commentary','comic']
             if ',' in remove_tags:
                 bad_tags.extend(remove_tags.split(','))
             else:

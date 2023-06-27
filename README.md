@@ -13,6 +13,7 @@ Here's an explanation of all the parameters:
 - **Enabled**: Enables the extension
 - **Booru**: The booru to get the tags from. Right now only Gelbooru, Rule34 and Safebooru are implemented. You can easily add more creating a class for the booru and adding it to the booru list in the script.
 - **Max Pages**: The maximum amount of pages to get the tags from. The extension will get a random page from the booru and then get the tags from one or more random pictures from that page.
+- **Post ID**: Here you can specify the ID of the post to get the tags from. If you leave it blank, the extension will get a random post (or more than one) from the random page.
 - **Tags to Search (Pre)**: This add the tags you define (separated by commas) to the search query. This is useful if you want to get tags from a specific category, like "1girl" or "solo".
 - **Tags to Remove (Post)**: This remove the tags you define (separated by commas) from the result query. This is useful if you want to remove tags that are too generic, like "1girl" or "solo".
 - **Remove Bad Tags**: This remove tags that you usually don't need (watermarks,text,censor)
@@ -24,6 +25,9 @@ Here's an explanation of all the parameters:
 - **Use img2img**: This uses not only the tags from the random image, but also the original picture to generate the final result.
 - **Denoising Strength**: This is the strength of the denoising filter. The higher the value, the more the picture will change from the original.
 - **Use last image as img2img** This uses the same picture for all the img2img generations in the same batch.
+
+## Found an issue?
+If you found an issue with the extension, please report it in the issues section of this repository.
 ---
 ## Made by Inzaniak
 ![Alt text](pics/logo.png) 

@@ -18,7 +18,7 @@ class Booru():
         self.booru = booru
         self.booru_url = booru_url
         
-    def get_data(self,add_tags,max_pages=10):
+    def get_data(self,add_tags,max_pages=10, id=''):
         pass
     
 class Gelbooru(Booru):
@@ -26,8 +26,10 @@ class Gelbooru(Booru):
     def __init__(self):
         super().__init__('gelbooru', 'https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=100')
         
-    def get_data(self, add_tags, max_pages=10):
-        self.booru_url = f"{self.booru_url}&pid={random.randint(0,max_pages)}{add_tags}"
+    def get_data(self, add_tags, max_pages=10, id=''):
+        if id:
+            add_tags = ''
+        self.booru_url = f"{self.booru_url}&pid={random.randint(0,max_pages)}{id}{add_tags}"
         res = requests.get(self.booru_url)
         data = res.json()
         return data
@@ -37,8 +39,10 @@ class Rule34(Booru):
     def __init__(self):
         super().__init__('rule34', 'https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit=100')
         
-    def get_data(self, add_tags, max_pages=10):
-        self.booru_url = f"{self.booru_url}&pid={random.randint(0,max_pages)}{add_tags}"
+    def get_data(self, add_tags, max_pages=10,id=''):
+        if id:
+            add_tags = ''
+        self.booru_url = f"{self.booru_url}&pid={random.randint(0,max_pages)}{id}{add_tags}"
         res = requests.get(self.booru_url)
         data = res.json()
         return {'post': data}
@@ -48,8 +52,10 @@ class Safebooru(Booru):
     def __init__(self):
         super().__init__('safebooru', 'https://safebooru.org/index.php?page=dapi&s=post&q=index&json=1&limit=100')
         
-    def get_data(self, add_tags, max_pages=10):
-        self.booru_url = f"{self.booru_url}&pid={random.randint(0,max_pages)}{add_tags}"
+    def get_data(self, add_tags, max_pages=10,id=''):
+        if id:
+            add_tags = ''
+        self.booru_url = f"{self.booru_url}&pid={random.randint(0,max_pages)}{id}{add_tags}"
         res = requests.get(self.booru_url)
         data = res.json()
         for post in data:
@@ -71,11 +77,13 @@ class Script(scripts.Script):
         enabled = gr.inputs.Checkbox(label="Enabled", default=True)
         booru = gr.inputs.Dropdown(["gelbooru","rule34","safebooru"], label="Booru", default="gelbooru")
         max_pages = gr.inputs.Slider(default=10, label="Max Pages", minimum=1, maximum=100, step=1)
+        gr.Markdown("""## Post""")
+        post_id = gr.inputs.Textbox(lines=1, label="Post ID")
         gr.Markdown("""## Tags""")
         tags = gr.inputs.Textbox(lines=1, label="Tags to Search (Pre)")
         remove_tags = gr.inputs.Textbox(lines=1, label="Tags to Remove (Post)")
         remove_bad_tags = gr.inputs.Checkbox(label="Remove bad tags", default=True)
-        shuffle_tags = gr.inputs.Checkbox(label="Shuffle tags", default=False)
+        shuffle_tags = gr.inputs.Checkbox(label="Shuffle tags", default=True)
         change_dash = gr.inputs.Checkbox(label='Convert "_" to spaces', default=False)
         same_prompt = gr.inputs.Checkbox(label="Use same prompt for all images", default=False)
         change_background = gr.inputs.Radio(["Don't Change","Add Background","Remove Background"], label="Change Background", default="Don't Change")
@@ -84,7 +92,7 @@ class Script(scripts.Script):
         use_img2img = gr.inputs.Checkbox(label="Use img2img", default=False)
         denoising = gr.inputs.Slider(default=0.75, label="Denoising", minimum=0.05, maximum=1.0, step=0.05)
         use_last_img = gr.inputs.Checkbox(label="Use last image as img2img", default=False)
-        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags]
+        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id]
     
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -97,7 +105,7 @@ class Script(scripts.Script):
             return [768,768]
         
 
-    def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags):
+    def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id):
         if enabled:
             # Initialize APIs
             booru_apis = {
@@ -105,9 +113,13 @@ class Script(scripts.Script):
                 'rule34': Rule34(),
                 'safebooru': Safebooru()
             }
+            if post_id:
+                post_url = "&id="+post_id
+            else:
+                post_url = ""
             bad_tags = []
             if remove_bad_tags:
-                bad_tags = ['watermark','text','english_text','speech_bubble','signature','artist_name','censored','bar_censor','translation','twitter_username',"twitter_logo",'patreon_username','commentary_request','tagme','commentary','character_name','mosaic_censoring','instagram_username','text_focus','english_commentary','comic','translation_request','fake_text','translated']
+                bad_tags = ['watermark','text','english_text','speech_bubble','signature','artist_name','censored','bar_censor','translation','twitter_username',"twitter_logo",'patreon_username','commentary_request','tagme','commentary','character_name','mosaic_censoring','instagram_username','text_focus','english_commentary','comic','translation_request','fake_text','translated','paid_reward_available','thought_bubble','multiple_views','silent_comic','out-of-frame_censoring','symbol-only_commentary','3koma','2koma','character_watermark','spoken_question_mark','japanese_text','spanish_text','language_text','fanbox_username','commission','original','ai_generated','stable_diffusion','tagme_(artist)','text_bubble']
             if ',' in remove_tags:
                 bad_tags.extend(remove_tags.split(','))
             else:
@@ -138,14 +150,19 @@ class Script(scripts.Script):
                 add_tags = '&tags=-animated'
 
             api_url = booru_apis.get(booru, Gelbooru())
-            data = api_url.get_data(add_tags, max_pages)
-            print(api_url)
+            data = api_url.get_data(add_tags, max_pages, post_url)
+            print(api_url.booru_url)
             random_number = random.randint(0, 99)
+            if post_id:
+                random_number = 0
             for _ in range(0, p.batch_size*p.n_iter):
                 if same_prompt:
                     random_post = data['post'][random_number]
                 else:
-                    random_post = data['post'][random.randint(0, 99)]
+                    random_number = random.randint(0, 99)
+                    if post_id:
+                        random_number = 0
+                    random_post = data['post'][random_number]
                 temp_tags = random_post['tags'].split(' ')
                 if shuffle_tags:
                     temp_tags = random.sample(temp_tags, len(temp_tags))

@@ -134,7 +134,7 @@ class Script(scripts.Script):
             if change_color == 'Colored':
                 bad_tags.extend(['monochrome','greyscale','grayscale'])
             elif change_color == 'Limited Palette':
-                p.prompt = (p.prompt + ',' if p.prompt else '') + '(limited_palette:1.2)'
+                p.prompt = (p.prompt + ',' if p.prompt else '') + '(limited_palette:1.3)'
             elif change_color == 'Monochrome':
                 p.prompt = (p.prompt + ',' if p.prompt else '') + 'monochrome,greyscale,grayscale'
             add_tags = ''

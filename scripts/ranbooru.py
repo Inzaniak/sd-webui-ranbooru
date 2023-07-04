@@ -165,7 +165,6 @@ class Script(scripts.Script):
                     if post_id:
                         random_number = 0
                     if mix_prompt:
-                        print('mixing prompts')
                         temp_tags = []
                         max_tags = 0
                         for _ in range(0, mix_amount):
@@ -177,10 +176,8 @@ class Script(scripts.Script):
                         # distinct temp_tags
                         temp_tags = list(set(temp_tags))
                         random_post = data['post'][random_number]
-                        print(f'Sampling {max_tags} tags')
                         if len(temp_tags) < max_tags:
                             max_tags = max(len(temp_tags), 20)
-                            print(f'Using {max_tags} tags instead')
                         random_post['tags'] = ' '.join(random.sample(temp_tags, max_tags))
                     else:
                         random_post = data['post'][random_number]

@@ -86,13 +86,15 @@ class Script(scripts.Script):
         shuffle_tags = gr.inputs.Checkbox(label="Shuffle tags", default=True)
         change_dash = gr.inputs.Checkbox(label='Convert "_" to spaces', default=False)
         same_prompt = gr.inputs.Checkbox(label="Use same prompt for all images", default=False)
+        mix_prompt = gr.inputs.Checkbox(label="Mix prompts", default=False)
+        mix_amount = gr.inputs.Slider(default=2, label="Mix amount", minimum=2, maximum=10, step=1)
         change_background = gr.inputs.Radio(["Don't Change","Add Background","Remove Background"], label="Change Background", default="Don't Change")
         change_color = gr.inputs.Radio(["Don't Change","Colored","Limited Palette","Monochrome"], label="Change Color", default="Don't Change")
         gr.Markdown("""## img2img""")
         use_img2img = gr.inputs.Checkbox(label="Use img2img", default=False)
         denoising = gr.inputs.Slider(default=0.75, label="Denoising", minimum=0.05, maximum=1.0, step=0.05)
         use_last_img = gr.inputs.Checkbox(label="Use last image as img2img", default=False)
-        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id]
+        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount]
     
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -105,7 +107,7 @@ class Script(scripts.Script):
             return [768,768]
         
 
-    def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id):
+    def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount):
         if enabled:
             # Initialize APIs
             booru_apis = {
@@ -119,7 +121,7 @@ class Script(scripts.Script):
                 post_url = ""
             bad_tags = []
             if remove_bad_tags:
-                bad_tags = ['watermark','text','english_text','speech_bubble','signature','artist_name','censored','bar_censor','translation','twitter_username',"twitter_logo",'patreon_username','commentary_request','tagme','commentary','character_name','mosaic_censoring','instagram_username','text_focus','english_commentary','comic','translation_request','fake_text','translated','paid_reward_available','thought_bubble','multiple_views','silent_comic','out-of-frame_censoring','symbol-only_commentary','3koma','2koma','character_watermark','spoken_question_mark','japanese_text','spanish_text','language_text','fanbox_username','commission','original','ai_generated','stable_diffusion','tagme_(artist)','text_bubble','qr_code','chinese_commentary']
+                bad_tags = ['watermark','text','english_text','speech_bubble','signature','artist_name','censored','bar_censor','translation','twitter_username',"twitter_logo",'patreon_username','commentary_request','tagme','commentary','character_name','mosaic_censoring','instagram_username','text_focus','english_commentary','comic','translation_request','fake_text','translated','paid_reward_available','thought_bubble','multiple_views','silent_comic','out-of-frame_censoring','symbol-only_commentary','3koma','2koma','character_watermark','spoken_question_mark','japanese_text','spanish_text','language_text','fanbox_username','commission','original','ai_generated','stable_diffusion','tagme_(artist)','text_bubble','qr_code','chinese_commentary','korean_text','partial_commentary','chinese_text']
             if ',' in remove_tags:
                 bad_tags.extend(remove_tags.split(','))
             else:
@@ -162,7 +164,26 @@ class Script(scripts.Script):
                     random_number = random.randint(0, 99)
                     if post_id:
                         random_number = 0
-                    random_post = data['post'][random_number]
+                    if mix_prompt:
+                        print('mixing prompts')
+                        temp_tags = []
+                        max_tags = 0
+                        for _ in range(0, mix_amount):
+                            random_number = random.randint(0, 99)
+                            if post_id:
+                                random_number = 0
+                            temp_tags.extend(data['post'][random_number]['tags'].split(' '))
+                            max_tags = max(max_tags, len(data['post'][random_number]['tags'].split(' ')))
+                        # distinct temp_tags
+                        temp_tags = list(set(temp_tags))
+                        random_post = data['post'][random_number]
+                        print(f'Sampling {max_tags} tags')
+                        if len(temp_tags) < max_tags:
+                            max_tags = max(len(temp_tags), 20)
+                            print(f'Using {max_tags} tags instead')
+                        random_post['tags'] = ' '.join(random.sample(temp_tags, max_tags))
+                    else:
+                        random_post = data['post'][random_number]
                 temp_tags = random_post['tags'].split(' ')
                 if shuffle_tags:
                     temp_tags = random.sample(temp_tags, len(temp_tags))

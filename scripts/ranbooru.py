@@ -246,7 +246,11 @@ class Script(scripts.Script):
                 if shuffle_tags:
                     temp_tags = random.sample(temp_tags, len(temp_tags))
                 prompts.append(','.join(temp_tags))
-                preview_urls.append(random_post['file_url'])
+                try:
+                    preview_urls.append(random_post['file_url'])
+                except KeyError:
+                    print('No file_url found, using random pic')
+                    preview_urls.append('https://pic.re/image')
             if use_img2img:
                 if use_last_img:
                     response = requests.get(random_post['file_url'], headers=api_url.headers)

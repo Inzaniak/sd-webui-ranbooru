@@ -17,6 +17,7 @@ class Booru():
     def __init__(self, booru, booru_url):
         self.booru = booru
         self.booru_url = booru_url
+        self.headers = {'user-agent': 'my-app/0.0.1'}
         
     def get_data(self,add_tags,max_pages=10, id=''):
         pass
@@ -61,6 +62,48 @@ class Safebooru(Booru):
         for post in data:
             post['file_url'] = f"https://safebooru.org/images/{post['directory']}/{post['image']}"
         return {'post': data}
+    
+class Konachan(Booru):
+    
+    def __init__(self):
+        super().__init__('konachan', 'https://konachan.com/post.json?limit=100')
+        
+    def get_data(self, add_tags, max_pages=10,id=''):
+        if id:
+            add_tags = ''
+        self.booru_url = f"{self.booru_url}&page={random.randint(0,max_pages)}{id}{add_tags}"
+        res = requests.get(self.booru_url)
+        data = res.json()
+        return {'post': data}
+    
+class Yandere(Booru):
+    
+    def __init__(self):
+        super().__init__('yande.re', 'https://yande.re/post.json?limit=100')
+        
+    def get_data(self, add_tags, max_pages=10,id=''):
+        if id:
+            add_tags = ''
+        self.booru_url = f"{self.booru_url}&page={random.randint(0,max_pages)}{id}{add_tags}"
+        res = requests.get(self.booru_url)
+        data = res.json()
+        return {'post': data}
+    
+class Danbooru(Booru):
+    
+    def __init__(self):
+        super().__init__('danbooru', 'https://danbooru.donmai.us/posts.json?limit=100')
+        
+    def get_data(self, add_tags, max_pages=10, id=''):
+        if id:
+            add_tags = ''
+        self.booru_url = f"{self.booru_url}&page={random.randint(0,max_pages)}{id}{add_tags}"
+        print(self.booru_url)
+        res = requests.get(self.booru_url, headers=self.headers)
+        data = res.json()
+        for post in data:
+            post['tags'] = post['tag_string']
+        return {'post': data}
 
 class Script(scripts.Script):  
 
@@ -75,7 +118,7 @@ class Script(scripts.Script):
     def ui(self, is_img2img):
         gr.Markdown("""# Ranbooru\n## General""")
         enabled = gr.inputs.Checkbox(label="Enabled", default=True)
-        booru = gr.inputs.Dropdown(["gelbooru","rule34","safebooru"], label="Booru", default="gelbooru")
+        booru = gr.inputs.Dropdown(["gelbooru","rule34","safebooru","danbooru","konachan",'yande.re'], label="Booru", default="gelbooru")
         max_pages = gr.inputs.Slider(default=10, label="Max Pages", minimum=1, maximum=100, step=1)
         gr.Markdown("""## Post""")
         post_id = gr.inputs.Textbox(lines=1, label="Post ID")
@@ -106,6 +149,7 @@ class Script(scripts.Script):
         else:
             return [768,768]
         
+    
 
     def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount):
         if enabled:
@@ -113,15 +157,28 @@ class Script(scripts.Script):
             booru_apis = {
                 'gelbooru': Gelbooru(),
                 'rule34': Rule34(),
-                'safebooru': Safebooru()
+                'safebooru': Safebooru(),
+                'danbooru': Danbooru(),
+                'konachan': Konachan(),
+                'yande.re': Yandere()
             }
+            # Check if compatible
+            if booru == 'konachan':
+                if post_id:
+                    raise Exception("Konachan does not support post IDs")
+            if booru == 'yande.re':
+                if post_id:
+                    raise Exception("Yande.re does not support post IDs")
+            if booru == 'danbooru':
+                if len(tags.split(','))>1:
+                    raise Exception("Danbooru does not support multiple tags. You can have only one tag.")
             if post_id:
                 post_url = "&id="+post_id
             else:
                 post_url = ""
             bad_tags = []
             if remove_bad_tags:
-                bad_tags = ['watermark','text','english_text','speech_bubble','signature','artist_name','censored','bar_censor','translation','twitter_username',"twitter_logo",'patreon_username','commentary_request','tagme','commentary','character_name','mosaic_censoring','instagram_username','text_focus','english_commentary','comic','translation_request','fake_text','translated','paid_reward_available','thought_bubble','multiple_views','silent_comic','out-of-frame_censoring','symbol-only_commentary','3koma','2koma','character_watermark','spoken_question_mark','japanese_text','spanish_text','language_text','fanbox_username','commission','original','ai_generated','stable_diffusion','tagme_(artist)','text_bubble','qr_code','chinese_commentary','korean_text','partial_commentary','chinese_text','copyright_request']
+                bad_tags = ['watermark','text','english_text','speech_bubble','signature','artist_name','censored','bar_censor','translation','twitter_username',"twitter_logo",'patreon_username','commentary_request','tagme','commentary','character_name','mosaic_censoring','instagram_username','text_focus','english_commentary','comic','translation_request','fake_text','translated','paid_reward_available','thought_bubble','multiple_views','silent_comic','out-of-frame_censoring','symbol-only_commentary','3koma','2koma','character_watermark','spoken_question_mark','japanese_text','spanish_text','language_text','fanbox_username','commission','original','ai_generated','stable_diffusion','tagme_(artist)','text_bubble','qr_code','chinese_commentary','korean_text','partial_commentary','chinese_text','copyright_request','heart_censor','censored_nipples']
             if ',' in remove_tags:
                 bad_tags.extend(remove_tags.split(','))
             else:
@@ -152,8 +209,9 @@ class Script(scripts.Script):
                 add_tags = '&tags=-animated'
 
             api_url = booru_apis.get(booru, Gelbooru())
-            data = api_url.get_data(add_tags, max_pages, post_url)
+            print(f'Using {booru}')
             print(api_url.booru_url)
+            data = api_url.get_data(add_tags, max_pages, post_url)
             random_number = random.randint(0, 99)
             if post_id:
                 random_number = 0
@@ -180,7 +238,10 @@ class Script(scripts.Script):
                             max_tags = max(len(temp_tags), 20)
                         random_post['tags'] = ' '.join(random.sample(temp_tags, max_tags))
                     else:
-                        random_post = data['post'][random_number]
+                        try:
+                            random_post = data['post'][random_number]
+                        except IndexError:
+                            raise Exception("No posts found with those tags. Try lowering the pages or changing the tags.")
                 temp_tags = random_post['tags'].split(' ')
                 if shuffle_tags:
                     temp_tags = random.sample(temp_tags, len(temp_tags))
@@ -188,11 +249,11 @@ class Script(scripts.Script):
                 preview_urls.append(random_post['file_url'])
             if use_img2img:
                 if use_last_img:
-                    response = requests.get(random_post['file_url'])
+                    response = requests.get(random_post['file_url'], headers=api_url.headers)
                     last_img = [Image.open(BytesIO(response.content))]
                 else:
                     for img in preview_urls:
-                        response = requests.get(img)
+                        response = requests.get(img, headers=api_url.headers)
                         last_img.append(Image.open(BytesIO(response.content)))
             new_prompts = []
             for prompt in prompts:

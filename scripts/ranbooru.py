@@ -208,6 +208,7 @@ class Script(scripts.Script):
                 'yande.re': Yandere(),
                 'aibooru': AIBooru()
             }
+            original_prompt = p.prompt
             # Check if compatible
             if booru == 'konachan':
                 if post_id:
@@ -359,13 +360,13 @@ class Script(scripts.Script):
                     new_positive_prompts = []
                     new_negative_prompts = []
                     for pr, np in zip(p.prompt, p.negative_prompt):
-                        new_positive_prompts.append('')
+                        new_positive_prompts.append(original_prompt)
                         new_negative_prompts.append(f'{np},{pr}')
                     p.prompt = new_positive_prompts
                     p.negative_prompt = new_negative_prompts
                 else:
                     p.negative_prompt = f'{p.negative_prompt},{p.prompt}'
-                    p.prompt = ''
+                    p.prompt = original_prompt
             if negative_mode == 'Negative' or chaos_mode in ['Chaos', 'Less Chaos']:
                 # NEGATIVE PROMPT FIX
                 neg_prompt_tokens = []

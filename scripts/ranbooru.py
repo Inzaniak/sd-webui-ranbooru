@@ -131,7 +131,7 @@ class Script(scripts.Script):
         same_prompt = gr.inputs.Checkbox(label="Use same prompt for all images", default=False)
         mix_prompt = gr.inputs.Checkbox(label="Mix prompts", default=False)
         mix_amount = gr.inputs.Slider(default=2, label="Mix amount", minimum=2, maximum=10, step=1)
-        change_background = gr.inputs.Radio(["Don't Change","Add Background","Remove Background"], label="Change Background", default="Don't Change")
+        change_background = gr.inputs.Radio(["Don't Change","Add Background","Remove Background","Remove All"], label="Change Background", default="Don't Change")
         change_color = gr.inputs.Radio(["Don't Change","Colored","Limited Palette","Monochrome"], label="Change Color", default="Don't Change")
         gr.Markdown("""## img2img""")
         use_img2img = gr.inputs.Checkbox(label="Use img2img", default=False)
@@ -190,6 +190,9 @@ class Script(scripts.Script):
             elif change_background == 'Remove Background':
                 bad_tags.extend(['outdoors','indoors'])
                 p.prompt = (p.prompt + ',' if p.prompt else '') + 'plain_background,simple_background,' + random.choice(colored_backgrounds)
+            elif change_background == 'Remove All':
+                bad_tags.extend(colored_backgrounds)
+                bad_tags.extend(['outdoors','indoors'])
             if change_color == 'Colored':
                 bad_tags.extend(['monochrome','greyscale','grayscale'])
             elif change_color == 'Limited Palette':

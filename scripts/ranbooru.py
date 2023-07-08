@@ -89,6 +89,21 @@ class Yandere(Booru):
         data = res.json()
         return {'post': data}
     
+class AIBooru(Booru):
+    
+    def __init__(self):
+        super().__init__('AIBooru', 'https://aibooru.online/posts.json?limit=100')
+                
+    def get_data(self, add_tags, max_pages=10,id=''):
+        if id:
+            add_tags = ''
+        self.booru_url = f"{self.booru_url}&page={random.randint(0,max_pages)}{id}{add_tags}"
+        res = requests.get(self.booru_url)
+        data = res.json()
+        for post in data:
+            post['tags'] = post['tag_string']
+        return {'post': data}
+    
 class Danbooru(Booru):
     
     def __init__(self):
@@ -118,7 +133,7 @@ class Script(scripts.Script):
     def ui(self, is_img2img):
         gr.Markdown("""# Ranbooru\n## General""")
         enabled = gr.inputs.Checkbox(label="Enabled", default=True)
-        booru = gr.inputs.Dropdown(["gelbooru","rule34","safebooru","danbooru","konachan",'yande.re'], label="Booru", default="gelbooru")
+        booru = gr.inputs.Dropdown(["gelbooru","rule34","safebooru","danbooru","konachan",'yande.re','aibooru'], label="Booru", default="gelbooru")
         max_pages = gr.inputs.Slider(default=10, label="Max Pages", minimum=1, maximum=100, step=1)
         gr.Markdown("""## Post""")
         post_id = gr.inputs.Textbox(lines=1, label="Post ID")
@@ -160,7 +175,8 @@ class Script(scripts.Script):
                 'safebooru': Safebooru(),
                 'danbooru': Danbooru(),
                 'konachan': Konachan(),
-                'yande.re': Yandere()
+                'yande.re': Yandere(),
+                'aibooru': AIBooru()
             }
             # Check if compatible
             if booru == 'konachan':
@@ -213,8 +229,8 @@ class Script(scripts.Script):
 
             api_url = booru_apis.get(booru, Gelbooru())
             print(f'Using {booru}')
-            print(api_url.booru_url)
             data = api_url.get_data(add_tags, max_pages, post_url)
+            print(api_url.booru_url)
             random_number = random.randint(0, 99)
             if post_id:
                 random_number = 0

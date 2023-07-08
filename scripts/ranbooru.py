@@ -135,9 +135,6 @@ def generate_chaos(pos_tags,neg_tags,chaos_amount):
     neg_prompt = ','.join(neg_list)
     return pos_prompt, neg_prompt
 
-def print_dropdown_value(value):
-    print(value)
-
 class Script(scripts.Script):   
         
     def hide_object(self, obj, booru):
@@ -354,7 +351,6 @@ class Script(scripts.Script):
                     p.prompt = prompts
                 else:
                     p.prompt = [f"{p.prompt},{prompt}" for prompt in prompts]
-                print(prompts)
                 if use_img2img:
                     if len(last_img) < p.batch_size*p.n_iter:
                         last_img = [last_img[0] for _ in range(0, p.batch_size*p.n_iter)]

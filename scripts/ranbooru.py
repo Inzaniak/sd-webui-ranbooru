@@ -7,10 +7,10 @@ import os
 from PIL import Image
 
 from modules import images
-from modules.processing import process_images, Processed, StableDiffusionProcessingImg2Img
-from modules.processing import Processed
+from modules.processing import process_images, StableDiffusionProcessingImg2Img
 from modules.shared import opts, cmd_opts, state, sd_model
 from modules.img2img import img2img
+from modules.sd_hijack import model_hijack
 
 class Booru():
     
@@ -119,8 +119,33 @@ class Danbooru(Booru):
         for post in data:
             post['tags'] = post['tag_string']
         return {'post': data}
+    
+def generate_chaos(pos_tags,neg_tags,chaos_amount):
+    # create a list with the tags in the prompt and in the negative prompt
+    chaos_list = [tag for tag in pos_tags.split(',') + neg_tags.split(',') if tag.strip() != '']
+    # distinct the list
+    chaos_list = list(set(chaos_list))
+    random.shuffle(chaos_list)
+    # put 50% of the tags in the prompt and the remaining 50% in the negative prompt
+    len_list = round(len(chaos_list)*chaos_amount)
+    pos_list = chaos_list[len_list:]
+    pos_prompt = ','.join(pos_list)
+    neg_list = chaos_list[:len_list]
+    random.shuffle(neg_list)
+    neg_prompt = ','.join(neg_list)
+    return pos_prompt, neg_prompt
 
-class Script(scripts.Script):  
+def print_dropdown_value(value):
+    print(value)
+
+class Script(scripts.Script):   
+        
+    def hide_object(self, obj, booru):
+        print(f'hide_object: {obj}, {booru.value}')
+        if booru.value == 'konachan' or booru.value == 'yande.re':
+            obj.interactive = False
+        else:
+            obj.interactive = True
 
     def title(self):
 
@@ -144,15 +169,25 @@ class Script(scripts.Script):
         shuffle_tags = gr.inputs.Checkbox(label="Shuffle tags", default=True)
         change_dash = gr.inputs.Checkbox(label='Convert "_" to spaces', default=False)
         same_prompt = gr.inputs.Checkbox(label="Use same prompt for all images", default=False)
-        mix_prompt = gr.inputs.Checkbox(label="Mix prompts", default=False)
-        mix_amount = gr.inputs.Slider(default=2, label="Mix amount", minimum=2, maximum=10, step=1)
         change_background = gr.inputs.Radio(["Don't Change","Add Background","Remove Background","Remove All"], label="Change Background", default="Don't Change")
         change_color = gr.inputs.Radio(["Don't Change","Colored","Limited Palette","Monochrome"], label="Change Color", default="Don't Change")
-        gr.Markdown("""## img2img""")
-        use_img2img = gr.inputs.Checkbox(label="Use img2img", default=False)
-        denoising = gr.inputs.Slider(default=0.75, label="Denoising", minimum=0.05, maximum=1.0, step=0.05)
-        use_last_img = gr.inputs.Checkbox(label="Use last image as img2img", default=False)
-        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount]
+        gr.Markdown("""\n---\n""")
+        with gr.Group():
+            with gr.Accordion("Img2Img", open = False):
+                use_img2img = gr.inputs.Checkbox(label="Use img2img", default=False)
+                denoising = gr.inputs.Slider(default=0.75, label="Denoising", minimum=0.05, maximum=1.0, step=0.05)
+                use_last_img = gr.inputs.Checkbox(label="Use last image as img2img", default=False)
+        with gr.Group():
+            with gr.Accordion("Extra", open = False):
+                with gr.Box():
+                    mix_prompt = gr.inputs.Checkbox(label="Mix prompts", default=False)
+                    mix_amount = gr.inputs.Slider(default=2, label="Mix amount", minimum=2, maximum=10, step=1)
+                with gr.Box():
+                    chaos_mode = gr.inputs.Radio(["None","Chaos","Less Chaos"], label="Chaos Mode", default="None")
+                    chaos_amount = gr.inputs.Slider(default=0.5, label="Chaos Amount %", minimum=0.1, maximum=1, step=0.05)
+                with gr.Box():
+                    negative_mode = gr.inputs.Radio(["None","Negative"], label="Negative Mode", default="None")
+        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount]
     
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -163,10 +198,8 @@ class Script(scripts.Script):
             return [512,768]
         else:
             return [768,768]
-        
-    
 
-    def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount):
+    def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount):
         if enabled:
             # Initialize APIs
             booru_apis = {
@@ -291,17 +324,65 @@ class Script(scripts.Script):
                     p.prompt = prompts[-1]
                 else:
                     p.prompt = f"{p.prompt},{prompts[-1]}"
+                if chaos_mode == 'Chaos':
+                    p.prompt, p.negative_prompt = generate_chaos(p.prompt,p.negative_prompt,chaos_amount)
+                elif chaos_mode == 'Less Chaos':
+                    p.prompt, negative_prompt = generate_chaos(p.prompt,'',chaos_amount)
+                    p.negative_prompt = p.negative_prompt+','+negative_prompt
+                    
             else:
                 print('Processing Multiple Prompts')
+                negative_prompts = []
+                new_prompts = []
+                if chaos_mode == 'Chaos':
+                    for prompt in prompts:
+                        tmp_prompt, negative_prompt = generate_chaos(prompt,p.negative_prompt,chaos_amount)
+                        new_prompts.append(tmp_prompt)
+                        negative_prompts.append(negative_prompt)
+                    prompts = new_prompts
+                    p.negative_prompt = negative_prompts
+                elif chaos_mode == 'Less Chaos':
+                    for prompt in prompts:
+                        tmp_prompt, negative_prompt = generate_chaos(prompt,'',chaos_amount)
+                        new_prompts.append(tmp_prompt)
+                        negative_prompts.append(negative_prompt)
+                    prompts = new_prompts
+                    p.negative_prompt = [p.negative_prompt+','+negative_prompt for negative_prompt in negative_prompts]
+                else:
+                    p.negative_prompt = [p.negative_prompt for _ in range(0, p.batch_size*p.n_iter)]
                 if p.prompt == '':
                     p.prompt = prompts
                 else:
                     p.prompt = [f"{p.prompt},{prompt}" for prompt in prompts]
-                p.negative_prompt = [p.negative_prompt for _ in range(0, p.batch_size*p.n_iter)]
+                print(prompts)
                 if use_img2img:
                     if len(last_img) < p.batch_size*p.n_iter:
                         last_img = [last_img[0] for _ in range(0, p.batch_size*p.n_iter)]
-            
+            if negative_mode == 'Negative':
+                if type(p.prompt) == list:
+                    new_positive_prompts = []
+                    new_negative_prompts = []
+                    for pr, np in zip(p.prompt, p.negative_prompt):
+                        new_positive_prompts.append('')
+                        new_negative_prompts.append(f'{np},{pr}')
+                    p.prompt = new_positive_prompts
+                    p.negative_prompt = new_negative_prompts
+                else:
+                    p.negative_prompt = f'{p.negative_prompt},{p.prompt}'
+                    p.prompt = ''
+            if negative_mode == 'Negative' or chaos_mode in ['Chaos', 'Less Chaos']:
+                # NEGATIVE PROMPT FIX
+                neg_prompt_tokens = []
+                for pr in p.negative_prompt:
+                    neg_prompt_tokens.append(model_hijack.get_prompt_lengths(pr)[1])
+                if len(set(neg_prompt_tokens)) != 1:
+                    print('Padding negative prompts')
+                    max_tokens = max(neg_prompt_tokens)
+                    for num,neg in enumerate(neg_prompt_tokens):
+                        while neg < max_tokens:
+                            p.negative_prompt[num] += random.choice(p.negative_prompt[num].split(','))
+                            # p.negative_prompt[num] += '_'
+                            neg = model_hijack.get_prompt_lengths(p.negative_prompt[num])[1]
             if use_img2img:
                 print('Using img2img')
                 print('Using picture: ', random_post['file_url'])

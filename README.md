@@ -11,7 +11,7 @@ To run the extension just scroll down in the txt2img or img2img panel to the scr
 The extension has a few features implemented right now.
 Here's an explanation of all the parameters:
 - **Enabled**: Enables the extension
-- **Booru**: The booru to get the tags from. Right now Gelbooru, Rule34, Safebooru, yande.re, konachan and danbooru are implemented. You can easily add more creating a class for the booru and adding it to the booru list in the script.
+- **Booru**: The booru to get the tags from. Right now Gelbooru, Rule34, Safebooru, yande.re, konachan, aibooru and danbooru are implemented. You can easily add more creating a class for the booru and adding it to the booru list in the script.
 - **Max Pages**: The maximum amount of pages to get the tags from. The extension will get a random page from the booru and then get the tags from one or more random pictures from that page.
 - **Post ID**: Here you can specify the ID of the post to get the tags from. If you leave it blank, the extension will get a random post (or more than one) from the random page.
 - **Tags to Search (Pre)**: This add the tags you define (separated by commas) to the search query. This is useful if you want to get tags from a specific category, like "1girl" or "solo".

@@ -20,13 +20,19 @@ Here's an explanation of all the parameters:
 - **Shuffle Tags**: This shuffle the tags before adding them to the text.
 - **Convert** "\_" to Spaces": This convert \_ to spaces in the tags.
 - **Use the same prompt for all images**: This use the same prompt for all the generated images in the same batch. If not selected, each image will have a different prompt.
-- **Mix Prompts**: This mixes tags from different random images.
-- **Mix Amount**: This sets the number of pictures to grab random tags from.
 - **Change Background**: This tries to change the background of the parsed tags by adding or removing specific tags
 - **Change Color**: This tries to change the color of the parsed tags by adding or removing specific tags
 - **Use img2img**: This uses not only the tags from the random image, but also the original picture to generate the final result.
 - **Denoising Strength**: This is the strength of the denoising filter. The higher the value, the more the picture will change from the original.
 - **Use last image as img2img** This uses the same picture for all the img2img generations in the same batch.
+- **Mix Prompts**: This mixes tags from different random images.
+- **Mix Amount**: This sets the number of pictures to grab random tags from.
+- **Chaos Mode**: This mixes the tags between the positive and negative prompt. If set to Less Chaos, it won't move the tags you insert in the negative prompt.
+- **Chaos Amount**: This sets the percentage of tags to move to the negative prompt.
+- **Negative Mode**: This moves all the tags to the negative prompt.
+
+## Known Issues
+- The chaos mode and negative mode can return an error when using a batch size greater than 1 combined with a batch count greater than 1. Rerunning the batch usually fixes the issue.
 
 ## Found an issue?
 If you found an issue with the extension, please report it in the issues section of this repository.

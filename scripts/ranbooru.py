@@ -356,16 +356,24 @@ class Script(scripts.Script):
                     if len(last_img) < p.batch_size*p.n_iter:
                         last_img = [last_img[0] for _ in range(0, p.batch_size*p.n_iter)]
             if negative_mode == 'Negative':
+                #remove tags from p.prompt using tags from the original prompt
+                orig_list = original_prompt.split(',')
                 if type(p.prompt) == list:
                     new_positive_prompts = []
                     new_negative_prompts = []
                     for pr, np in zip(p.prompt, p.negative_prompt):
+                        clean_prompt = pr.split(',')
+                        clean_prompt = [tag for tag in clean_prompt if tag not in orig_list]
+                        clean_prompt = ','.join(clean_prompt)
                         new_positive_prompts.append(original_prompt)
-                        new_negative_prompts.append(f'{np},{pr}')
+                        new_negative_prompts.append(f'{np},{clean_prompt}')
                     p.prompt = new_positive_prompts
                     p.negative_prompt = new_negative_prompts
                 else:
-                    p.negative_prompt = f'{p.negative_prompt},{p.prompt}'
+                    clean_prompt = p.prompt.split(',')
+                    clean_prompt = [tag for tag in clean_prompt if tag not in orig_list]
+                    clean_prompt = ','.join(clean_prompt)
+                    p.negative_prompt = f'{p.negative_prompt},{clean_prompt}'
                     p.prompt = original_prompt
             if negative_mode == 'Negative' or chaos_mode in ['Chaos', 'Less Chaos']:
                 # NEGATIVE PROMPT FIX

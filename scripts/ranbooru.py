@@ -166,6 +166,8 @@ class Script(scripts.Script):
         shuffle_tags = gr.inputs.Checkbox(label="Shuffle tags", default=True)
         change_dash = gr.inputs.Checkbox(label='Convert "_" to spaces', default=False)
         same_prompt = gr.inputs.Checkbox(label="Use same prompt for all images", default=False)
+        limit_tags = gr.inputs.Slider(default=1.0, label="Limit tags", minimum=0.05, maximum=1.0, step=0.05)
+        max_tags = gr.inputs.Slider(default=100, label="Max tags", minimum=1, maximum=100, step=1)
         change_background = gr.inputs.Radio(["Don't Change","Add Background","Remove Background","Remove All"], label="Change Background", default="Don't Change")
         change_color = gr.inputs.Radio(["Don't Change","Colored","Limited Palette","Monochrome"], label="Change Color", default="Don't Change")
         gr.Markdown("""\n---\n""")
@@ -184,7 +186,7 @@ class Script(scripts.Script):
                     chaos_amount = gr.inputs.Slider(default=0.5, label="Chaos Amount %", minimum=0.1, maximum=1, step=0.05)
                 with gr.Box():
                     negative_mode = gr.inputs.Radio(["None","Negative"], label="Negative Mode", default="None")
-        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount]
+        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags]
     
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -196,7 +198,7 @@ class Script(scripts.Script):
         else:
             return [768,768]
 
-    def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount):
+    def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags):
         if enabled:
             # Initialize APIs
             booru_apis = {
@@ -388,6 +390,31 @@ class Script(scripts.Script):
                             p.negative_prompt[num] += random.choice(p.negative_prompt[num].split(','))
                             # p.negative_prompt[num] += '_'
                             neg = model_hijack.get_prompt_lengths(p.negative_prompt[num])[1]
+            if limit_tags < 1:
+                # remove tags from p.prompt in percentage based on limit_tags
+                if type(p.prompt) == list:
+                    for num, pr in enumerate(p.prompt):
+                        clean_prompt = pr.split(',')
+                        clean_prompt = clean_prompt[:int(len(clean_prompt)*limit_tags)]
+                        clean_prompt = ','.join(clean_prompt)
+                        p.prompt[num] = clean_prompt
+                else:
+                    clean_prompt = p.prompt.split(',')
+                    clean_prompt = clean_prompt[:int(len(clean_prompt)*limit_tags)]
+                    clean_prompt = ','.join(clean_prompt)
+                    p.prompt = clean_prompt
+            if max_tags > 0:
+                if type(p.prompt) == list:
+                    for num, pr in enumerate(p.prompt):
+                        clean_prompt = pr.split(',')
+                        clean_prompt = clean_prompt[:max_tags]
+                        clean_prompt = ','.join(clean_prompt)
+                        p.prompt[num] = clean_prompt
+                else:
+                    clean_prompt = p.prompt.split(',')
+                    clean_prompt = clean_prompt[:max_tags]
+                    clean_prompt = ','.join(clean_prompt)
+                    p.prompt = clean_prompt
             if use_img2img:
                 print('Using img2img')
                 print('Using picture: ', random_post['file_url'])

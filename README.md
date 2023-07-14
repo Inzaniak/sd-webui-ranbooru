@@ -20,6 +20,8 @@ Here's an explanation of all the parameters:
 - **Shuffle Tags**: This shuffle the tags before adding them to the text.
 - **Convert** "\_" to Spaces": This convert \_ to spaces in the tags.
 - **Use the same prompt for all images**: This use the same prompt for all the generated images in the same batch. If not selected, each image will have a different prompt.
+- **Limit Tags**: This limits the number of tags to use in percentage of the original tags. For example, if you set it to 50, it will use only half of the tags.
+- **Max Tags**: This limits the number of tags to use.
 - **Change Background**: This tries to change the background of the parsed tags by adding or removing specific tags
 - **Change Color**: This tries to change the color of the parsed tags by adding or removing specific tags
 - **Use img2img**: This uses not only the tags from the random image, but also the original picture to generate the final result.

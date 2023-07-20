@@ -33,6 +33,9 @@ Here's an explanation of all the parameters:
 - **Chaos Amount**: This sets the percentage of tags to move to the negative prompt.
 - **Negative Mode**: This moves all the tags to the negative prompt.
 
+## How to use
+Check the usage.md file for a detailed explanation of how to use the extension.
+
 ## Known Issues
 - The chaos mode and negative mode can return an error when using a batch size greater than 1 combined with a batch count greater than 1. Rerunning the batch usually fixes the issue.
 

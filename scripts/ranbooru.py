@@ -35,6 +35,21 @@ class Gelbooru(Booru):
         data = res.json()
         return data
     
+class XBooru(Booru):
+    
+    def __init__(self):
+        super().__init__('xbooru', 'https://xbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=100')
+        
+    def get_data(self, add_tags, max_pages=10, id=''):
+        if id:
+            add_tags = ''
+        self.booru_url = f"{self.booru_url}&pid={random.randint(0,max_pages)}{id}{add_tags}"
+        res = requests.get(self.booru_url)
+        data = res.json()
+        for post in data:
+            post['file_url'] = f"https://xbooru.com/images/{post['directory']}/{post['image']}"
+        return {'post': data}
+    
 class Rule34(Booru):
     
     def __init__(self):
@@ -155,7 +170,7 @@ class Script(scripts.Script):
     def ui(self, is_img2img):
         gr.Markdown("""# Ranbooru\n## General""")
         enabled = gr.inputs.Checkbox(label="Enabled", default=True)
-        booru = gr.inputs.Dropdown(["gelbooru","rule34","safebooru","danbooru","konachan",'yande.re','aibooru'], label="Booru", default="gelbooru")
+        booru = gr.inputs.Dropdown(["gelbooru","rule34","safebooru","danbooru","konachan",'yande.re','aibooru','xbooru'], label="Booru", default="gelbooru")
         max_pages = gr.inputs.Slider(default=10, label="Max Pages", minimum=1, maximum=100, step=1)
         gr.Markdown("""## Post""")
         post_id = gr.inputs.Textbox(lines=1, label="Post ID")
@@ -208,7 +223,8 @@ class Script(scripts.Script):
                 'danbooru': Danbooru(),
                 'konachan': Konachan(),
                 'yande.re': Yandere(),
-                'aibooru': AIBooru()
+                'aibooru': AIBooru(),
+                'xbooru': XBooru(),
             }
             original_prompt = p.prompt
             # Check if compatible

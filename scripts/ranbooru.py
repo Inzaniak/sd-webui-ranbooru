@@ -5,6 +5,7 @@ import modules.scripts as scripts
 import gradio as gr
 import os
 from PIL import Image
+import numpy as np
 
 from modules import images
 from modules.processing import process_images, StableDiffusionProcessingImg2Img
@@ -16,6 +17,7 @@ COLORED_BG = ['black_background','aqua_background','white_background','colored_b
 ADD_BG = ['outdoors','indoors']
 BW_BG = ['monochrome','greyscale','grayscale']
 POST_AMOUNT = 100
+DEBUG = False
 
 def check_exception(booru, parameters):
     post_id = parameters.get('post_id')
@@ -143,7 +145,6 @@ class Danbooru(Booru):
         if id:
             add_tags = ''
         self.booru_url = f"{self.booru_url}&page={random.randint(0,max_pages)}{id}{add_tags}"
-        print(self.booru_url)
         res = requests.get(self.booru_url, headers=self.headers)
         data = res.json()
         for post in data:
@@ -200,6 +201,7 @@ class Script(scripts.Script):
         max_tags = gr.inputs.Slider(default=100, label="Max tags", minimum=1, maximum=100, step=1)
         change_background = gr.inputs.Radio(["Don't Change","Add Background","Remove Background","Remove All"], label="Change Background", default="Don't Change")
         change_color = gr.inputs.Radio(["Don't Change","Colored","Limited Palette","Monochrome"], label="Change Color", default="Don't Change")
+        sorting_order = gr.inputs.Radio(["Random","High Score","Low Score"], label="Sorting Order", default="Random")
         gr.Markdown("""\n---\n""")
         with gr.Group():
             with gr.Accordion("Img2Img", open = False):
@@ -216,7 +218,7 @@ class Script(scripts.Script):
                     chaos_amount = gr.inputs.Slider(default=0.5, label="Chaos Amount %", minimum=0.1, maximum=1, step=0.05)
                 with gr.Box():
                     negative_mode = gr.inputs.Radio(["None","Negative"], label="Negative Mode", default="None")
-        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags]
+        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order]
     
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -228,7 +230,7 @@ class Script(scripts.Script):
         else:
             return [768,768]
 
-    def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags):
+    def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order):
         if enabled:
             # Initialize APIs
             booru_apis = {
@@ -295,7 +297,16 @@ class Script(scripts.Script):
 
             data = api_url.get_data(add_tags, max_pages, post_url)
             print(api_url.booru_url)
-            random_number = random.randint(0, POST_AMOUNT-1)
+            # Replace null scores with 0
+            for post in data['post']:
+                if post['score'] == None:
+                    post['score'] = 0
+            # Sort based on sorting_order
+            if sorting_order == 'High Score':
+                data['post'] = sorted(data['post'], key=lambda k: k.get('score', 0), reverse=True)
+            elif sorting_order == 'Low Score':
+                data['post'] = sorted(data['post'], key=lambda k: k.get('score', 0))
+            random_number = self.random_number(sorting_order)
             if post_id:
                 random_number = 0
             for _ in range(0, p.batch_size*p.n_iter):
@@ -303,13 +314,13 @@ class Script(scripts.Script):
                     random_post = data['post'][random_number]
                 else:
                     if not post_id:
-                        random_number = random.randint(0, POST_AMOUNT-1)
+                        random_number = self.random_number(sorting_order)
                     if mix_prompt:
                         temp_tags = []
                         max_tags = 0
                         for _ in range(0, mix_amount):
                             if not post_id:
-                                random_number = random.randint(0, POST_AMOUNT-1)
+                                random_number = self.random_number(sorting_order)
                             temp_tags.extend(data['post'][random_number]['tags'].split(' '))
                             max_tags = max(max_tags, len(data['post'][random_number]['tags'].split(' ')))
                         # distinct temp_tags
@@ -332,6 +343,9 @@ class Script(scripts.Script):
                 except KeyError:
                     print('No file_url found, using random pic')
                     preview_urls.append('https://pic.re/image')
+                # Debug picture
+                if DEBUG:
+                    print(random_post)
             if use_img2img:
                 if use_last_img:
                     response = requests.get(random_post['file_url'], headers=api_url.headers)
@@ -475,3 +489,13 @@ class Script(scripts.Script):
         else:
             proc = process_images(p)
         return proc
+
+    def random_number(self, sorting_order):
+        # create weights so that the first element is more likely to be chosen than the next one
+        weights = np.arange(POST_AMOUNT, 0, -1)
+        weights = weights / weights.sum()
+        if sorting_order in ('High Score', 'Low Score'):
+            random_number = np.random.choice(np.arange(POST_AMOUNT), p=weights)
+        else:
+            random_number = random.randint(0, POST_AMOUNT-1)
+        return random_number 

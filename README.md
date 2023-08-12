@@ -24,6 +24,7 @@ Here's an explanation of all the parameters:
 - **Max Tags**: This limits the number of tags to use.
 - **Change Background**: This tries to change the background of the parsed tags by adding or removing specific tags
 - **Change Color**: This tries to change the color of the parsed tags by adding or removing specific tags
+- **Sorting Order**: This orders the result of the scraped pictures by high or low score and make it more or less likely to get a high or low score picture. This is applied AFTER the results are scraped, because you cannot use the API to search for high ranking pictures.
 - **Use img2img**: This uses not only the tags from the random image, but also the original picture to generate the final result.
 - **Denoising Strength**: This is the strength of the denoising filter. The higher the value, the more the picture will change from the original.
 - **Use last image as img2img** This uses the same picture for all the img2img generations in the same batch.

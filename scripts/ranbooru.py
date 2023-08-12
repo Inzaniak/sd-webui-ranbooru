@@ -12,6 +12,21 @@ from modules.shared import opts, cmd_opts, state, sd_model
 from modules.img2img import img2img
 from modules.sd_hijack import model_hijack
 
+COLORED_BG = ['black_background','aqua_background','white_background','colored_background','gray_background','blue_background','green_background','red_background','brown_background','purple_background','yellow_background','orange_background','pink_background','plain','transparent_background','simple_background','two-tone_background','grey_background']
+ADD_BG = ['outdoors','indoors']
+BW_BG = ['monochrome','greyscale','grayscale']
+POST_AMOUNT = 100
+
+def check_exception(booru, parameters):
+    post_id = parameters.get('post_id')
+    tags = parameters.get('tags')
+    if booru == 'konachan' and post_id:
+        raise Exception("Konachan does not support post IDs")
+    if booru == 'yande.re' and post_id:
+        raise Exception("Yande.re does not support post IDs")
+    if booru == 'danbooru' and len(tags.split(',')) > 1:
+        raise Exception("Danbooru does not support multiple tags. You can have only one tag.")
+
 class Booru():
     
     def __init__(self, booru, booru_url):
@@ -25,7 +40,7 @@ class Booru():
 class Gelbooru(Booru):
     
     def __init__(self):
-        super().__init__('gelbooru', 'https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=100')
+        super().__init__('gelbooru', f'https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit={POST_AMOUNT}')
         
     def get_data(self, add_tags, max_pages=10, id=''):
         if id:
@@ -38,7 +53,7 @@ class Gelbooru(Booru):
 class XBooru(Booru):
     
     def __init__(self):
-        super().__init__('xbooru', 'https://xbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=100')
+        super().__init__('xbooru', f'https://xbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit={POST_AMOUNT}')
         
     def get_data(self, add_tags, max_pages=10, id=''):
         if id:
@@ -53,7 +68,7 @@ class XBooru(Booru):
 class Rule34(Booru):
     
     def __init__(self):
-        super().__init__('rule34', 'https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit=100')
+        super().__init__('rule34', f'https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit={POST_AMOUNT}')
         
     def get_data(self, add_tags, max_pages=10,id=''):
         if id:
@@ -66,7 +81,7 @@ class Rule34(Booru):
 class Safebooru(Booru):
     
     def __init__(self):
-        super().__init__('safebooru', 'https://safebooru.org/index.php?page=dapi&s=post&q=index&json=1&limit=100')
+        super().__init__('safebooru', f'https://safebooru.org/index.php?page=dapi&s=post&q=index&json=1&limit={POST_AMOUNT}')
         
     def get_data(self, add_tags, max_pages=10,id=''):
         if id:
@@ -81,7 +96,7 @@ class Safebooru(Booru):
 class Konachan(Booru):
     
     def __init__(self):
-        super().__init__('konachan', 'https://konachan.com/post.json?limit=100')
+        super().__init__('konachan', f'https://konachan.com/post.json?limit={POST_AMOUNT}')
         
     def get_data(self, add_tags, max_pages=10,id=''):
         if id:
@@ -94,7 +109,7 @@ class Konachan(Booru):
 class Yandere(Booru):
     
     def __init__(self):
-        super().__init__('yande.re', 'https://yande.re/post.json?limit=100')
+        super().__init__('yande.re', f'https://yande.re/post.json?limit={POST_AMOUNT}')
         
     def get_data(self, add_tags, max_pages=10,id=''):
         if id:
@@ -107,7 +122,7 @@ class Yandere(Booru):
 class AIBooru(Booru):
     
     def __init__(self):
-        super().__init__('AIBooru', 'https://aibooru.online/posts.json?limit=100')
+        super().__init__('AIBooru', f'https://aibooru.online/posts.json?limit={POST_AMOUNT}')
                 
     def get_data(self, add_tags, max_pages=10,id=''):
         if id:
@@ -122,7 +137,7 @@ class AIBooru(Booru):
 class Danbooru(Booru):
     
     def __init__(self):
-        super().__init__('danbooru', 'https://danbooru.donmai.us/posts.json?limit=100')
+        super().__init__('danbooru', f'https://danbooru.donmai.us/posts.json?limit={POST_AMOUNT}')
         
     def get_data(self, add_tags, max_pages=10, id=''):
         if id:
@@ -228,19 +243,15 @@ class Script(scripts.Script):
             }
             original_prompt = p.prompt
             # Check if compatible
-            if booru == 'konachan':
-                if post_id:
-                    raise Exception("Konachan does not support post IDs")
-            if booru == 'yande.re':
-                if post_id:
-                    raise Exception("Yande.re does not support post IDs")
-            if booru == 'danbooru':
-                if len(tags.split(','))>1:
-                    raise Exception("Danbooru does not support multiple tags. You can have only one tag.")
+            check_exception(booru, {'tags':tags,'post_id':post_id})
+            
+            # Manage Post ID
             if post_id:
                 post_url = "&id="+post_id
             else:
                 post_url = ""
+                
+            # Manage Bad Tags
             bad_tags = []
             if remove_bad_tags:
                 bad_tags = ['watermark','text','english_text','speech_bubble','signature','artist_name','censored','bar_censor','translation','twitter_username',"twitter_logo",'patreon_username','commentary_request','tagme','commentary','character_name','mosaic_censoring','instagram_username','text_focus','english_commentary','comic','translation_request','fake_text','translated','paid_reward_available','thought_bubble','multiple_views','silent_comic','out-of-frame_censoring','symbol-only_commentary','3koma','2koma','character_watermark','spoken_question_mark','japanese_text','spanish_text','language_text','fanbox_username','commission','original','ai_generated','stable_diffusion','tagme_(artist)','text_bubble','qr_code','chinese_commentary','korean_text','partial_commentary','chinese_text','copyright_request','heart_censor','censored_nipples']
@@ -248,55 +259,57 @@ class Script(scripts.Script):
                 bad_tags.extend(remove_tags.split(','))
             else:
                 bad_tags.append(remove_tags)
-            colored_backgrounds = ['black_background','aqua_background','white_background','colored_background','gray_background','blue_background','green_background','red_background','brown_background','purple_background','yellow_background','orange_background','pink_background','plain','transparent_background','simple_background','two-tone_background','grey_background']
+                
+            # Manage Backgrounds
             if change_background == 'Add Background':
-                bad_tags.extend(colored_backgrounds)
+                bad_tags.extend(COLORED_BG)
                 p.prompt = (p.prompt + ',' if p.prompt else '') + f'detailed_background,{random.choice(["outdoors","indoors"])}'
             elif change_background == 'Remove Background':
-                bad_tags.extend(['outdoors','indoors'])
-                p.prompt = (p.prompt + ',' if p.prompt else '') + 'plain_background,simple_background,' + random.choice(colored_backgrounds)
+                bad_tags.extend(ADD_BG)
+                p.prompt = (p.prompt + ',' if p.prompt else '') + 'plain_background,simple_background,' + random.choice(COLORED_BG)
             elif change_background == 'Remove All':
-                bad_tags.extend(colored_backgrounds)
-                bad_tags.extend(['outdoors','indoors'])
+                bad_tags.extend(COLORED_BG)
+                bad_tags.extend(ADD_BG)
             if change_color == 'Colored':
-                bad_tags.extend(['monochrome','greyscale','grayscale'])
+                bad_tags.extend(BW_BG)
             elif change_color == 'Limited Palette':
                 p.prompt = (p.prompt + ',' if p.prompt else '') + '(limited_palette:1.3)'
             elif change_color == 'Monochrome':
-                p.prompt = (p.prompt + ',' if p.prompt else '') + 'monochrome,greyscale,grayscale'
+                p.prompt = (p.prompt + ',' if p.prompt else '') + ','.join(BW_BG)
+            
             add_tags = ''
+            if tags != '':
+                add_tags = f'&tags=-animated+{tags.replace(",", "+")}'
+            else:
+                add_tags = '&tags=-animated'
+            
+            # Getting Data
             api_url = ''
             random_post = {'preview_url':''}
             prompts = []
             last_img = []
             data = {'post': [{'tags': ''}]}
             preview_urls = []
-            if tags != '':
-                add_tags = f'&tags=-animated+{tags.replace(",", "+")}'
-            else:
-                add_tags = '&tags=-animated'
-
             api_url = booru_apis.get(booru, Gelbooru())
             print(f'Using {booru}')
+
             data = api_url.get_data(add_tags, max_pages, post_url)
             print(api_url.booru_url)
-            random_number = random.randint(0, 99)
+            random_number = random.randint(0, POST_AMOUNT-1)
             if post_id:
                 random_number = 0
             for _ in range(0, p.batch_size*p.n_iter):
                 if same_prompt:
                     random_post = data['post'][random_number]
                 else:
-                    random_number = random.randint(0, 99)
-                    if post_id:
-                        random_number = 0
+                    if not post_id:
+                        random_number = random.randint(0, POST_AMOUNT-1)
                     if mix_prompt:
                         temp_tags = []
                         max_tags = 0
                         for _ in range(0, mix_amount):
-                            random_number = random.randint(0, 99)
-                            if post_id:
-                                random_number = 0
+                            if not post_id:
+                                random_number = random.randint(0, POST_AMOUNT-1)
                             temp_tags.extend(data['post'][random_number]['tags'].split(' '))
                             max_tags = max(max_tags, len(data['post'][random_number]['tags'].split(' ')))
                         # distinct temp_tags
@@ -345,7 +358,6 @@ class Script(scripts.Script):
                 elif chaos_mode == 'Less Chaos':
                     p.prompt, negative_prompt = generate_chaos(p.prompt,'',chaos_amount)
                     p.negative_prompt = p.negative_prompt+','+negative_prompt
-                    
             else:
                 print('Processing Multiple Prompts')
                 negative_prompts = []

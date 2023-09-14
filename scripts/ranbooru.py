@@ -185,39 +185,39 @@ class Script(scripts.Script):
     
     def ui(self, is_img2img):
         gr.Markdown("""# Ranbooru\n## General""")
-        enabled = gr.inputs.Checkbox(label="Enabled", default=True)
-        booru = gr.inputs.Dropdown(["gelbooru","rule34","safebooru","danbooru","konachan",'yande.re','aibooru','xbooru'], label="Booru", default="gelbooru")
-        max_pages = gr.inputs.Slider(default=10, label="Max Pages", minimum=1, maximum=100, step=1)
+        enabled = gr.Checkbox(label="Enabled", value=True)
+        booru = gr.Dropdown(["gelbooru","rule34","safebooru","danbooru","konachan",'yande.re','aibooru','xbooru'], label="Booru", value="gelbooru")
+        max_pages = gr.Slider(value=10, label="Max Pages", minimum=1, maximum=100, step=1)
         gr.Markdown("""## Post""")
-        post_id = gr.inputs.Textbox(lines=1, label="Post ID")
+        post_id = gr.Textbox(lines=1, label="Post ID")
         gr.Markdown("""## Tags""")
-        tags = gr.inputs.Textbox(lines=1, label="Tags to Search (Pre)")
-        remove_tags = gr.inputs.Textbox(lines=1, label="Tags to Remove (Post)")
-        remove_bad_tags = gr.inputs.Checkbox(label="Remove bad tags", default=True)
-        shuffle_tags = gr.inputs.Checkbox(label="Shuffle tags", default=True)
-        change_dash = gr.inputs.Checkbox(label='Convert "_" to spaces', default=False)
-        same_prompt = gr.inputs.Checkbox(label="Use same prompt for all images", default=False)
-        limit_tags = gr.inputs.Slider(default=1.0, label="Limit tags", minimum=0.05, maximum=1.0, step=0.05)
-        max_tags = gr.inputs.Slider(default=100, label="Max tags", minimum=1, maximum=100, step=1)
-        change_background = gr.inputs.Radio(["Don't Change","Add Background","Remove Background","Remove All"], label="Change Background", default="Don't Change")
-        change_color = gr.inputs.Radio(["Don't Change","Colored","Limited Palette","Monochrome"], label="Change Color", default="Don't Change")
-        sorting_order = gr.inputs.Radio(["Random","High Score","Low Score"], label="Sorting Order", default="Random")
+        tags = gr.Textbox(lines=1, label="Tags to Search (Pre)")
+        remove_tags = gr.Textbox(lines=1, label="Tags to Remove (Post)")
+        remove_bad_tags = gr.Checkbox(label="Remove bad tags", value=True)
+        shuffle_tags = gr.Checkbox(label="Shuffle tags", value=True)
+        change_dash = gr.Checkbox(label='Convert "_" to spaces', value=False)
+        same_prompt = gr.Checkbox(label="Use same prompt for all images", value=False)
+        limit_tags = gr.Slider(value=1.0, label="Limit tags", minimum=0.05, maximum=1.0, step=0.05)
+        max_tags = gr.Slider(value=100, label="Max tags", minimum=1, maximum=100, step=1)
+        change_background = gr.Radio(["Don't Change","Add Background","Remove Background","Remove All"], label="Change Background", value="Don't Change")
+        change_color = gr.Radio(["Don't Change","Colored","Limited Palette","Monochrome"], label="Change Color", value="Don't Change")
+        sorting_order = gr.Radio(["Random","High Score","Low Score"], label="Sorting Order", value="Random")
         gr.Markdown("""\n---\n""")
         with gr.Group():
             with gr.Accordion("Img2Img", open = False):
-                use_img2img = gr.inputs.Checkbox(label="Use img2img", default=False)
-                denoising = gr.inputs.Slider(default=0.75, label="Denoising", minimum=0.05, maximum=1.0, step=0.05)
-                use_last_img = gr.inputs.Checkbox(label="Use last image as img2img", default=False)
+                use_img2img = gr.Checkbox(label="Use img2img", value=False)
+                denoising = gr.Slider(value=0.75, label="Denoising", minimum=0.05, maximum=1.0, step=0.05)
+                use_last_img = gr.Checkbox(label="Use last image as img2img", value=False)
         with gr.Group():
             with gr.Accordion("Extra", open = False):
                 with gr.Box():
-                    mix_prompt = gr.inputs.Checkbox(label="Mix prompts", default=False)
-                    mix_amount = gr.inputs.Slider(default=2, label="Mix amount", minimum=2, maximum=10, step=1)
+                    mix_prompt = gr.Checkbox(label="Mix prompts", value=False)
+                    mix_amount = gr.Slider(value=2, label="Mix amount", minimum=2, maximum=10, step=1)
                 with gr.Box():
-                    chaos_mode = gr.inputs.Radio(["None","Chaos","Less Chaos"], label="Chaos Mode", default="None")
-                    chaos_amount = gr.inputs.Slider(default=0.5, label="Chaos Amount %", minimum=0.1, maximum=1, step=0.05)
+                    chaos_mode = gr.Radio(["None","Chaos","Less Chaos"], label="Chaos Mode", value="None")
+                    chaos_amount = gr.Slider(value=0.5, label="Chaos Amount %", minimum=0.1, maximum=1, step=0.05)
                 with gr.Box():
-                    negative_mode = gr.inputs.Radio(["None","Negative"], label="Negative Mode", default="None")
+                    negative_mode = gr.Radio(["None","Negative"], label="Negative Mode", value="None")
         return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order]
     
     def check_orientation(self, img):

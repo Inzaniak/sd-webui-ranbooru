@@ -167,6 +167,9 @@ def generate_chaos(pos_tags,neg_tags,chaos_amount):
     return pos_prompt, neg_prompt
 
 class Script(scripts.Script):   
+    
+    def __init__(self):
+        self.previous_loras = ''
         
     def hide_object(self, obj, booru):
         print(f'hide_object: {obj}, {booru.value}')
@@ -184,41 +187,54 @@ class Script(scripts.Script):
         return True
     
     def ui(self, is_img2img):
-        gr.Markdown("""# Ranbooru\n## General""")
-        enabled = gr.inputs.Checkbox(label="Enabled", default=True)
-        booru = gr.inputs.Dropdown(["gelbooru","rule34","safebooru","danbooru","konachan",'yande.re','aibooru','xbooru'], label="Booru", default="gelbooru")
-        max_pages = gr.inputs.Slider(default=10, label="Max Pages", minimum=1, maximum=100, step=1)
-        gr.Markdown("""## Post""")
-        post_id = gr.inputs.Textbox(lines=1, label="Post ID")
-        gr.Markdown("""## Tags""")
-        tags = gr.inputs.Textbox(lines=1, label="Tags to Search (Pre)")
-        remove_tags = gr.inputs.Textbox(lines=1, label="Tags to Remove (Post)")
-        remove_bad_tags = gr.inputs.Checkbox(label="Remove bad tags", default=True)
-        shuffle_tags = gr.inputs.Checkbox(label="Shuffle tags", default=True)
-        change_dash = gr.inputs.Checkbox(label='Convert "_" to spaces', default=False)
-        same_prompt = gr.inputs.Checkbox(label="Use same prompt for all images", default=False)
-        limit_tags = gr.inputs.Slider(default=1.0, label="Limit tags", minimum=0.05, maximum=1.0, step=0.05)
-        max_tags = gr.inputs.Slider(default=100, label="Max tags", minimum=1, maximum=100, step=1)
-        change_background = gr.inputs.Radio(["Don't Change","Add Background","Remove Background","Remove All"], label="Change Background", default="Don't Change")
-        change_color = gr.inputs.Radio(["Don't Change","Colored","Limited Palette","Monochrome"], label="Change Color", default="Don't Change")
-        sorting_order = gr.inputs.Radio(["Random","High Score","Low Score"], label="Sorting Order", default="Random")
-        gr.Markdown("""\n---\n""")
         with gr.Group():
-            with gr.Accordion("Img2Img", open = False):
-                use_img2img = gr.inputs.Checkbox(label="Use img2img", default=False)
-                denoising = gr.inputs.Slider(default=0.75, label="Denoising", minimum=0.05, maximum=1.0, step=0.05)
-                use_last_img = gr.inputs.Checkbox(label="Use last image as img2img", default=False)
+            with gr.Accordion("Ranbooru", open = True):
+                enabled = gr.inputs.Checkbox(label="Enabled", default=True)
+                booru = gr.inputs.Dropdown(["gelbooru","rule34","safebooru","danbooru","konachan",'yande.re','aibooru','xbooru'], label="Booru", default="gelbooru")
+                max_pages = gr.inputs.Slider(default=10, label="Max Pages", minimum=1, maximum=100, step=1)
+                gr.Markdown("""## Post""")
+                post_id = gr.inputs.Textbox(lines=1, label="Post ID")
+                gr.Markdown("""## Tags""")
+                tags = gr.inputs.Textbox(lines=1, label="Tags to Search (Pre)")
+                remove_tags = gr.inputs.Textbox(lines=1, label="Tags to Remove (Post)")
+                mature_rating = gr.inputs.Radio(["All","Safe","Questionable","Explicit"], label="Mature Rating", default="All")
+                remove_bad_tags = gr.inputs.Checkbox(label="Remove bad tags", default=True)
+                shuffle_tags = gr.inputs.Checkbox(label="Shuffle tags", default=True)
+                change_dash = gr.inputs.Checkbox(label='Convert "_" to spaces', default=False)
+                same_prompt = gr.inputs.Checkbox(label="Use same prompt for all images", default=False)
+                limit_tags = gr.inputs.Slider(default=1.0, label="Limit tags", minimum=0.05, maximum=1.0, step=0.05)
+                max_tags = gr.inputs.Slider(default=100, label="Max tags", minimum=1, maximum=100, step=1)
+                change_background = gr.inputs.Radio(["Don't Change","Add Background","Remove Background","Remove All"], label="Change Background", default="Don't Change")
+                change_color = gr.inputs.Radio(["Don't Change","Colored","Limited Palette","Monochrome"], label="Change Color", default="Don't Change")
+                sorting_order = gr.inputs.Radio(["Random","High Score","Low Score"], label="Sorting Order", default="Random")
+                gr.Markdown("""\n---\n""")
+                with gr.Group():
+                    with gr.Accordion("Img2Img", open = False):
+                        use_img2img = gr.inputs.Checkbox(label="Use img2img", default=False)
+                        denoising = gr.inputs.Slider(default=0.75, label="Denoising", minimum=0.05, maximum=1.0, step=0.05)
+                        use_last_img = gr.inputs.Checkbox(label="Use last image as img2img", default=False)
+                with gr.Group():
+                    with gr.Accordion("Extra", open = False):
+                        with gr.Box():
+                            mix_prompt = gr.inputs.Checkbox(label="Mix prompts", default=False)
+                            mix_amount = gr.inputs.Slider(default=2, label="Mix amount", minimum=2, maximum=10, step=1)
+                        with gr.Box():
+                            chaos_mode = gr.inputs.Radio(["None","Chaos","Less Chaos"], label="Chaos Mode", default="None")
+                            chaos_amount = gr.inputs.Slider(default=0.5, label="Chaos Amount %", minimum=0.1, maximum=1, step=0.05)
+                        with gr.Box():
+                            negative_mode = gr.inputs.Radio(["None","Negative"], label="Negative Mode", default="None")
         with gr.Group():
-            with gr.Accordion("Extra", open = False):
+            with gr.Accordion("LoRAnado", open = False):
                 with gr.Box():
-                    mix_prompt = gr.inputs.Checkbox(label="Mix prompts", default=False)
-                    mix_amount = gr.inputs.Slider(default=2, label="Mix amount", minimum=2, maximum=10, step=1)
+                    lora_enabled = gr.inputs.Checkbox(label="Use LoRAnado", default=False)
+                    lora_lock_prev = gr.inputs.Checkbox(label="Lock previous LoRAs", default=False)
+                    lora_folder = gr.Textbox(lines=1, label="LoRAs Subfolder")
+                    lora_amount = gr.inputs.Slider(default=1, label="LoRAs Amount", minimum=1, maximum=10, step=1)
                 with gr.Box():
-                    chaos_mode = gr.inputs.Radio(["None","Chaos","Less Chaos"], label="Chaos Mode", default="None")
-                    chaos_amount = gr.inputs.Slider(default=0.5, label="Chaos Amount %", minimum=0.1, maximum=1, step=0.05)
-                with gr.Box():
-                    negative_mode = gr.inputs.Radio(["None","Negative"], label="Negative Mode", default="None")
-        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order]
+                    lora_min = gr.Slider(value=-1, label="LoRAs Min", minimum=-1, maximum=1, step=0.1)
+                    lora_max = gr.inputs.Slider(default=1, label="LoRAs Max", minimum=-1, maximum=1, step=0.1)
+                    lora_custom_weights = gr.Textbox(lines=1, label="LoRAs Custom Weights")
+        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev]
     
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -229,8 +245,34 @@ class Script(scripts.Script):
             return [512,768]
         else:
             return [768,768]
+        
+    def loranado(self,lora_enabled,lora_folder,lora_amount,lora_min,lora_max,lora_custom_weights,p,lora_lock_prev):
+        lora_prompt = ''
+        if lora_enabled:
+            if lora_lock_prev:
+                lora_prompt = self.previous_loras
+            else:
+                loras = []
+                loras = os.listdir(f'{lora_folder}')
+                # get only .safetensors files
+                loras = [lora.replace('.safetensors','') for lora in loras if lora.endswith('.safetensors')]                
+                for l in range(0, lora_amount):
+                    lora_weight = 0
+                    if lora_custom_weights != '':
+                        lora_weight = float(lora_custom_weights.split(',')[l])
+                    while lora_weight == 0:
+                        lora_weight = round(random.uniform(lora_min, lora_max), 1)
+                    lora_prompt += f'<lora:{random.choice(loras)}:{lora_weight}>'
+                    self.previous_loras = lora_prompt
+        if lora_prompt:
+            if type(p.prompt) == list:
+                for num, pr in enumerate(p.prompt):
+                    p.prompt[num] = f'{lora_prompt} {pr}'
+            else:
+                pass
+        return p
 
-    def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order):
+    def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev):
         if enabled:
             # Initialize APIs
             booru_apis = {
@@ -282,6 +324,8 @@ class Script(scripts.Script):
             add_tags = ''
             if tags != '':
                 add_tags = f'&tags=-animated+{tags.replace(",", "+")}'
+                if mature_rating != 'All':
+                    add_tags += f'+rating:{mature_rating.lower()}'
             else:
                 add_tags = '&tags=-animated'
             
@@ -457,6 +501,10 @@ class Script(scripts.Script):
                     clean_prompt = clean_prompt[:max_tags]
                     clean_prompt = ','.join(clean_prompt)
                     p.prompt = clean_prompt
+                    
+            # LORANADO
+            p = self.loranado(lora_enabled,lora_folder,lora_amount,lora_min,lora_max,lora_custom_weights,p,lora_lock_prev)
+                    
             if use_img2img:
                 print('Using img2img')
                 print('Using picture: ', random_post['file_url'])
@@ -486,6 +534,9 @@ class Script(scripts.Script):
                         proc.images.append(img)
             else:
                 proc = process_images(p)
+        elif lora_enabled:
+            p = self.loranado(lora_enabled,lora_folder,lora_amount,lora_min,lora_max,lora_custom_weights,p)
+            proc = process_images(p)
         else:
             proc = process_images(p)
         return proc

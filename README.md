@@ -55,8 +55,14 @@ Check the usage.md file for a detailed explanation of how to use the extension.
 - The chaos mode and negative mode can return an error when using a batch size greater than 1 combined with a batch count greater than 1. Rerunning the batch usually fixes the issue.
 - Right now the Mature Rating option seems to work only on Gelbooru, and only for "Questionable" and "Explicit" values.
 
-## Found an issue?
-If you found an issue with the extension, please report it in the issues section of this repository.
+## Found an issue?  
+If you found an issue with the extension, please report it in the issues section of this repository.  
+Special thanks to [TheGameratorT](https://github.com/TheGameratorT) for contributing.
+
+## Check out my other scripts
+- [Ranbooru](https://github.com/Inzaniak/sd-webui-ranbooru)
+- [Workflow](https://github.com/Inzaniak/sd-webui-workflow)
+
 ---
 ## Made by Inzaniak
 ![Alt text](pics/logo.png) 

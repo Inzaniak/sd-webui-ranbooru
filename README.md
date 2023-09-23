@@ -8,14 +8,17 @@ Just copy the script from the scripts folder above into the extensions folder of
 To run the extension just scroll down in the txt2img or img2img panel to the script selection and select Ranbooru.
 
 ## Features
-The extension has a few features implemented right now.
+The extension is now divided into two main functionalities that can be used together or separately:
+### Ranbooru
+This is the main part of the extension. It gets a random set of tags from boorus pictures.  
 Here's an explanation of all the parameters:
-- **Enabled**: Enables the extension
+- **Enabled**: Enables the Ranbooru part of the extension
 - **Booru**: The booru to get the tags from. Right now Gelbooru, Rule34, Safebooru, yande.re, konachan, aibooru, danbooru and xbooru are implemented. You can easily add more creating a class for the booru and adding it to the booru list in the script.
 - **Max Pages**: The maximum amount of pages to get the tags from. The extension will get a random page from the booru and then get the tags from one or more random pictures from that page.
 - **Post ID**: Here you can specify the ID of the post to get the tags from. If you leave it blank, the extension will get a random post (or more than one) from the random page.
 - **Tags to Search (Pre)**: This add the tags you define (separated by commas) to the search query. This is useful if you want to get tags from a specific category, like "1girl" or "solo".
 - **Tags to Remove (Post)**: This remove the tags you define (separated by commas) from the result query. This is useful if you want to remove tags that are too generic, like "1girl" or "solo".
+- **Mature Rating**: This sets the mature rating of the booru. This is useful if you want to get only SFW or NSFW tags. It only works on supported boorus (right now it has been tested only on Gelbooru).
 - **Remove Bad Tags**: This remove tags that you usually don't need (watermarks,text,censor)
 - **Shuffle Tags**: This shuffle the tags before adding them to the text.
 - **Convert** "\_" to Spaces": This convert \_ to spaces in the tags.
@@ -34,11 +37,23 @@ Here's an explanation of all the parameters:
 - **Chaos Amount**: This sets the percentage of tags to move to the negative prompt.
 - **Negative Mode**: This moves all the tags to the negative prompt.
 
+### LoRAnado
+This is a newer experimental function that enables you to pick random LoRAs from a folder and add them to the prompt. This can lead to interesting results.  
+Here's an explanation of all the parameters:
+- **Use LoRAnado**: Enables the LoRAnado part of the extension
+- **Lock Previous LoRAs**: Uses the same LoRAs of the previous generation. This is useful if you've found an interesting combination and you want to test it with different tags.
+- **LoRAs Subfolder**: The subfolder of the LoRAs folder to use. This is required.
+- **LoRAs Amount**: The amount of LoRAs to use.
+- **Min LoRAs Weight**: The minimum weight of the LoRAs to use in the prompt.
+- **Max LoRAs Weight**: The maximum weight of the LoRAs to use in the prompt.
+- **LoRAs Custom Weights**: Here you can specify the weight to use with the random LoRAs (separated by commas). If you leave it blank, the extension will use the min and max weights. Example: if you have 3 LoRAs you can write: 0.2,0.3,0.5.
+
 ## How to use
 Check the usage.md file for a detailed explanation of how to use the extension.
 
 ## Known Issues
 - The chaos mode and negative mode can return an error when using a batch size greater than 1 combined with a batch count greater than 1. Rerunning the batch usually fixes the issue.
+- Right now the Mature Rating option seems to work only on Gelbooru, and only for "Questionable" and "Explicit" values.
 
 ## Found an issue?
 If you found an issue with the extension, please report it in the issues section of this repository.

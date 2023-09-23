@@ -45,3 +45,5 @@ By enabling `Mix prompts` each image will be created using a mixture of N differ
 By enabling `Chaos Mode` each image will have an amount of tags moved to the negative prompt. The amount is defined by the `Chaos Amount` parameter, for example 0.5 means 50% of the tags will be moved to the negative prompt. Using the `Less Chaos` option won't move the tags you manually insert in the negative prompt.
 ### Negative Mode
 By enabling `Negative Mode` each image will have all tags moved to the negative prompt.
+### LoRAnado
+By enabling `Use LoRAnado` you can add random LoRAs to the prompt. This can lead to interesting results. Once you have enabled the option you have to choose a folder from your LoRA path, this can be your main folder or any subfolder (right now only the LoRAs contained in the set folder will be used, not the ones in other subfolders). You now need to set the min and max weight values you want to generate and the amount of random LoRAs to use. You can also set custom weights for each LoRA by separating them with a comma (e.g. 0.2,0.3,0.5). If you want to use the same LoRAs of the previous generation, enable `Lock Previous LoRAs`.

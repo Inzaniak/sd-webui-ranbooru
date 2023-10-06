@@ -269,7 +269,7 @@ class Script(scripts.Script):
                 for num, pr in enumerate(p.prompt):
                     p.prompt[num] = f'{lora_prompt} {pr}'
             else:
-                pass
+                p.prompt = f'{lora_prompt} {p.prompt}'
         return p
 
     def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev):

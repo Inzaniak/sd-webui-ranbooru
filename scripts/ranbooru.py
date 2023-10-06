@@ -184,14 +184,14 @@ class Script(scripts.Script):
 
     def show(self, is_img2img):
 
-        return True
+        return scripts.AlwaysVisible
     
     def ui(self, is_img2img):
         with gr.Group():
-            with gr.Accordion("Ranbooru", open = True):
-                enabled = gr.Checkbox(label="Enabled", value=True)
+            with gr.Accordion("Ranbooru", open = False):
+                enabled = gr.Checkbox(label="Enable")
                 booru = gr.Dropdown(["gelbooru","rule34","safebooru","danbooru","konachan",'yande.re','aibooru','xbooru'], label="Booru", value="gelbooru")
-                max_pages = gr.Slider(value=100, label="Max Pages", minimum=1, maximum=100, step=1)
+                max_pages = gr.Slider(label="Max Pages", minimum=1, maximum=100,value=100, step=1)
                 gr.Markdown("""## Post""")
                 post_id = gr.Textbox(lines=1, label="Post ID")
                 gr.Markdown("""## Tags""")
@@ -272,7 +272,7 @@ class Script(scripts.Script):
                 pass
         return p
 
-    def run(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev):
+    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev):
         if enabled:
             # Initialize APIs
             booru_apis = {
@@ -533,13 +533,15 @@ class Script(scripts.Script):
                     for img in last_img:
                         proc.images.append(img)
             else:
-                proc = process_images(p)
+                pass
+                # proc = process_images(p)
         elif lora_enabled:
-            p = self.loranado(lora_enabled,lora_folder,lora_amount,lora_min,lora_max,lora_custom_weights,p)
-            proc = process_images(p)
+            p = self.loranado(lora_enabled,lora_folder,lora_amount,lora_min,lora_max,lora_custom_weights,p,lora_lock_prev)
+            # proc = process_images(p)
         else:
-            proc = process_images(p)
-        return proc
+            pass
+            # proc = process_images(p)
+        # return proc
 
     def random_number(self, sorting_order):
         # create weights so that the first element is more likely to be chosen than the next one

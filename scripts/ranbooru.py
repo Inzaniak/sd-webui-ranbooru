@@ -170,6 +170,8 @@ class Script(scripts.Script):
     
     def __init__(self):
         self.previous_loras = ''
+        self.last_img = []
+        self.real_steps = 0
         
     def hide_object(self, obj, booru):
         print(f'hide_object: {obj}, {booru.value}')
@@ -506,32 +508,10 @@ class Script(scripts.Script):
             p = self.loranado(lora_enabled,lora_folder,lora_amount,lora_min,lora_max,lora_custom_weights,p,lora_lock_prev)
                     
             if use_img2img:
-                print('Using img2img')
-                print('Using picture: ', random_post['file_url'])
-                width, height = self.check_orientation(last_img[0])
-                p2 = StableDiffusionProcessingImg2Img(
-                    sd_model=sd_model,
-                    outpath_samples=opts.outdir_samples or opts.outdir_img2img_samples,
-                    outpath_grids=opts.outdir_grids or opts.outdir_img2img_grids,
-                    prompt=p.prompt,
-                    negative_prompt=p.negative_prompt,
-                    seed=p.seed,
-                    sampler_name='Euler a',
-                    batch_size=p.batch_size,
-                    n_iter=p.n_iter,
-                    steps=p.steps,
-                    cfg_scale=p.cfg_scale,
-                    width=width,
-                    height=height,
-                    init_images=last_img,
-                    denoising_strength=denoising,
-                )
-                proc = process_images(p2)
-                if use_last_img:
-                    proc.images.append(last_img[0])
-                else:
-                    for img in last_img:
-                        proc.images.append(img)
+                self.real_steps = p.steps
+                p.steps = 1
+                # proc = process_images(p2)
+                self.last_img = last_img
             else:
                 pass
                 # proc = process_images(p)
@@ -542,6 +522,36 @@ class Script(scripts.Script):
             pass
             # proc = process_images(p)
         # return proc
+        
+    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev):
+        if use_img2img:
+            print('Using pictures')
+            width, height = self.check_orientation(self.last_img[0])
+            p = StableDiffusionProcessingImg2Img(
+                sd_model=sd_model,
+                outpath_samples=opts.outdir_samples or opts.outdir_img2img_samples,
+                outpath_grids=opts.outdir_grids or opts.outdir_img2img_grids,
+                prompt=p.prompt,
+                negative_prompt=p.negative_prompt,
+                seed=p.seed,
+                sampler_name='Euler a',
+                batch_size=p.batch_size,
+                n_iter=p.n_iter,
+                steps=self.real_steps,
+                cfg_scale=p.cfg_scale,
+                width=width,
+                height=height,
+                init_images=self.last_img,
+                denoising_strength=denoising,
+            )
+            proc = process_images(p)
+            processed.images = proc.images
+            if use_last_img:
+                    processed.images.append(self.last_img[0])
+            else:
+                for img in self.last_img:
+                    processed.images.append(img)
+        
 
     def random_number(self, sorting_order):
         # create weights so that the first element is more likely to be chosen than the next one

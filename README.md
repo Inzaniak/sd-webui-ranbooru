@@ -54,6 +54,7 @@ Check the usage.md file for a detailed explanation of how to use the extension.
 ## Known Issues
 - The chaos mode and negative mode can return an error when using a batch size greater than 1 combined with a batch count greater than 1. Rerunning the batch usually fixes the issue.
 - Right now the Mature Rating option seems to work only on Gelbooru, and only for "Questionable" and "Explicit" values.
+- "sd-dynamic-prompts" creates problems with the multiple prompts option. Disabling the extension is the only solution for now.
 
 ## Found an issue?  
 If you found an issue with the extension, please report it in the issues section of this repository.  

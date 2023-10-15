@@ -16,8 +16,8 @@ Here's an explanation of all the parameters:
 - **Booru**: The booru to get the tags from. Right now Gelbooru, Rule34, Safebooru, yande.re, konachan, aibooru, danbooru and xbooru are implemented. You can easily add more creating a class for the booru and adding it to the booru list in the script.
 - **Max Pages**: The maximum amount of pages to get the tags from. The extension will get a random page from the booru and then get the tags from one or more random pictures from that page.
 - **Post ID**: Here you can specify the ID of the post to get the tags from. If you leave it blank, the extension will get a random post (or more than one) from the random page.
-- **Tags to Search (Pre)**: This add the tags you define (separated by commas) to the search query. This is useful if you want to get tags from a specific category, like "1girl" or "solo".
-- **Tags to Remove (Post)**: This remove the tags you define (separated by commas) from the result query. This is useful if you want to remove tags that are too generic, like "1girl" or "solo".
+- **Tags to Search (Pre)**: This add the tags you define (this should be separated by commas e.g: 1girl,solo,short_hair) to the search query. This is useful if you want to get tags from a specific category, like "1girl" or "solo".
+- **Tags to Remove (Post)**: This remove the tags you define (this should be separated by commas e.g: 1girl,solo,short_hair) from the result query. This is useful if you want to remove tags that are too generic, like "1girl" or "solo".
 - **Mature Rating**: This sets the mature rating of the booru. This is useful if you want to get only SFW or NSFW tags. It only works on supported boorus (right now it has been tested only on Gelbooru).
 - **Remove Bad Tags**: This remove tags that you usually don't need (watermarks,text,censor)
 - **Shuffle Tags**: This shuffle the tags before adding them to the text.

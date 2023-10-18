@@ -26,6 +26,8 @@ def check_exception(booru, parameters):
         raise Exception("Konachan does not support post IDs")
     if booru == 'yande.re' and post_id:
         raise Exception("Yande.re does not support post IDs")
+    if booru == 'e621' and post_id:
+        raise Exception("e621 does not support post IDs")
     if booru == 'danbooru' and len(tags.split(',')) > 1:
         raise Exception("Danbooru does not support multiple tags. You can have only one tag.")
 
@@ -151,6 +153,26 @@ class Danbooru(Booru):
             post['tags'] = post['tag_string']
         return {'post': data}
     
+class e621(Booru):
+    
+    def __init__(self):
+        super().__init__('danbooru', f'https://e621.net/posts.json?limit={POST_AMOUNT}')
+        
+    def get_data(self, add_tags, max_pages=10, id=''):
+        if id:
+            add_tags = ''
+        self.booru_url = f"{self.booru_url}&page={random.randint(0,max_pages)}{id}{add_tags}"
+        res = requests.get(self.booru_url, headers=self.headers)
+        data = res.json()['posts']
+        for post in data:
+            temp_tags = []
+            sublevels = ['general','artist','copyright','character','species']
+            for sublevel in sublevels:
+                temp_tags.extend(post['tags'][sublevel])
+            post['tags'] = ' '.join(temp_tags)
+            post['score'] = post['score']['total']
+        return {'post': data}
+    
 def generate_chaos(pos_tags,neg_tags,chaos_amount):
     # create a list with the tags in the prompt and in the negative prompt
     chaos_list = [tag for tag in pos_tags.split(',') + neg_tags.split(',') if tag.strip() != '']
@@ -192,7 +214,7 @@ class Script(scripts.Script):
         with gr.Group():
             with gr.Accordion("Ranbooru", open = False):
                 enabled = gr.Checkbox(label="Enable")
-                booru = gr.Dropdown(["gelbooru","rule34","safebooru","danbooru","konachan",'yande.re','aibooru','xbooru'], label="Booru", value="gelbooru")
+                booru = gr.Dropdown(["gelbooru","rule34","safebooru","danbooru","konachan",'yande.re','aibooru','xbooru','e621'], label="Booru", value="gelbooru")
                 max_pages = gr.Slider(label="Max Pages", minimum=1, maximum=100,value=100, step=1)
                 gr.Markdown("""## Post""")
                 post_id = gr.Textbox(lines=1, label="Post ID")
@@ -286,6 +308,7 @@ class Script(scripts.Script):
                 'yande.re': Yandere(),
                 'aibooru': AIBooru(),
                 'xbooru': XBooru(),
+                'e621': e621(),
             }
             original_prompt = p.prompt
             # Check if compatible

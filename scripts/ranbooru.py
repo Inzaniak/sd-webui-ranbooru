@@ -9,7 +9,7 @@ import numpy as np
 
 from modules import images
 from modules.processing import process_images, StableDiffusionProcessingImg2Img
-from modules.shared import opts, cmd_opts, state, sd_model
+from modules import shared
 from modules.img2img import img2img
 from modules.sd_hijack import model_hijack
 
@@ -528,9 +528,9 @@ class Script(scripts.Script):
             print('Using pictures')
             width, height = self.check_orientation(self.last_img[0])
             p = StableDiffusionProcessingImg2Img(
-                sd_model=sd_model,
-                outpath_samples=opts.outdir_samples or opts.outdir_img2img_samples,
-                outpath_grids=opts.outdir_grids or opts.outdir_img2img_grids,
+                sd_model=shared.sd_model,
+                outpath_samples=shared.opts.outdir_samples or shared.opts.outdir_img2img_samples,
+                outpath_grids=shared.opts.outdir_grids or shared.opts.outdir_img2img_grids,
                 prompt=p.prompt,
                 negative_prompt=p.negative_prompt,
                 seed=p.seed,

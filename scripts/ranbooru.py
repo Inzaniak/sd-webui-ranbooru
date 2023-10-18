@@ -170,6 +170,7 @@ class e621(Booru):
             for sublevel in sublevels:
                 temp_tags.extend(post['tags'][sublevel])
             post['tags'] = ' '.join(temp_tags)
+            post['score'] = post['score']['total']
         return {'post': data}
     
 def generate_chaos(pos_tags,neg_tags,chaos_amount):

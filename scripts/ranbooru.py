@@ -22,15 +22,12 @@ DEBUG = False
 def check_exception(booru, parameters):
     post_id = parameters.get('post_id')
     tags = parameters.get('tags')
-    sorting_order = parameters.get('sorting_order')
     if booru == 'konachan' and post_id:
         raise Exception("Konachan does not support post IDs")
     if booru == 'yande.re' and post_id:
         raise Exception("Yande.re does not support post IDs")
     if booru == 'e621' and post_id:
         raise Exception("e621 does not support post IDs")
-    if booru == 'e621' and sorting_order != 'Random':
-        raise Exception("e621 does not support sorting order")
     if booru == 'danbooru' and len(tags.split(',')) > 1:
         raise Exception("Danbooru does not support multiple tags. You can have only one tag.")
 
@@ -312,8 +309,8 @@ class Script(scripts.Script):
             }
             original_prompt = p.prompt
             # Check if compatible
-            check_exception(booru, {'tags':tags,'post_id':post_id, 'sorting_order':sorting_order})    
-                    
+            check_exception(booru, {'tags':tags,'post_id':post_id})
+            
             # Manage Post ID
             if post_id:
                 post_url = "&id="+post_id

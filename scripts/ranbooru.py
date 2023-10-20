@@ -19,6 +19,9 @@ BW_BG = ['monochrome','greyscale','grayscale']
 POST_AMOUNT = 100
 DEBUG = False
 RATING_TYPES = {
+    "none": {
+        "All": "All"
+    },
     "full": {
         "All": "All",
         "Safe": "safe",
@@ -34,12 +37,12 @@ RATING_TYPES = {
     }
 }
 RATINGS = {
-    "e621": RATING_TYPES['single'],
+    "e621": RATING_TYPES['full'],
     "danbooru": RATING_TYPES['single'],
-    "aibooru": RATING_TYPES['single'],
+    "aibooru": RATING_TYPES['full'],
     "yande.re": RATING_TYPES['full'],
     "konachan": RATING_TYPES['full'],
-    "safebooru": RATING_TYPES['single'],
+    "safebooru": RATING_TYPES['none'],
     "rule34": RATING_TYPES['full'],
     "xbooru": RATING_TYPES['full'],
     "gelbooru": RATING_TYPES['single']

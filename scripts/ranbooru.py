@@ -18,6 +18,36 @@ ADD_BG = ['outdoors','indoors']
 BW_BG = ['monochrome','greyscale','grayscale']
 POST_AMOUNT = 100
 DEBUG = False
+RATING_TYPES = {
+    "full": {
+        "All": "All",
+        "Safe": "safe",
+        "Questionable": "questionable",
+        "Explicit": "explicit"
+    },
+    "single": {
+        "All": "All",
+        "Safe": "g",
+        "Sensitive": "s",
+        "Questionable": "q",
+        "Explicit": "e"
+    }
+}
+RATINGS = {
+    "e621": RATING_TYPES['single'],
+    "danbooru": RATING_TYPES['single'],
+    "aibooru": RATING_TYPES['single'],
+    "yande.re": RATING_TYPES['full'],
+    "konachan": RATING_TYPES['full'],
+    "safebooru": RATING_TYPES['single'],
+    "rule34": RATING_TYPES['full'],
+    "xbooru": RATING_TYPES['full'],
+    "gelbooru": RATING_TYPES['single']
+}
+
+def get_available_ratings(booru):
+    mature_ratings =  gr.Radio.update(choices=RATINGS[booru].keys(), value="All")
+    return mature_ratings
 
 def check_exception(booru, parameters):
     post_id = parameters.get('post_id')
@@ -219,7 +249,7 @@ class Script(scripts.Script):
                 gr.Markdown("""## Tags""")
                 tags = gr.Textbox(lines=1, label="Tags to Search (Pre)")
                 remove_tags = gr.Textbox(lines=1, label="Tags to Remove (Post)")
-                mature_rating = gr.Radio(["All","Safe","Questionable","Explicit"], label="Mature Rating", value="All")
+                mature_rating = gr.Radio(RATINGS['gelbooru'].keys(), label="Mature Rating", value="All")
                 remove_bad_tags = gr.Checkbox(label="Remove bad tags", value=True)
                 shuffle_tags = gr.Checkbox(label="Shuffle tags", value=True)
                 change_dash = gr.Checkbox(label='Convert "_" to spaces', value=False)
@@ -229,6 +259,9 @@ class Script(scripts.Script):
                 change_background = gr.Radio(["Don't Change","Add Background","Remove Background","Remove All"], label="Change Background", value="Don't Change")
                 change_color = gr.Radio(["Don't Change","Colored","Limited Palette","Monochrome"], label="Change Color", value="Don't Change")
                 sorting_order = gr.Radio(["Random","High Score","Low Score"], label="Sorting Order", value="Random")
+                
+                booru.change(get_available_ratings, booru, mature_rating) # update available ratings
+                
                 gr.Markdown("""\n---\n""")
                 with gr.Group():
                     with gr.Accordion("Img2Img", open = False):
@@ -348,7 +381,7 @@ class Script(scripts.Script):
             if tags != '':
                 add_tags = f'&tags=-animated+{tags.replace(",", "+")}'
                 if mature_rating != 'All':
-                    add_tags += f'+rating:{mature_rating.lower()}'
+                    add_tags += f'+rating:{RATINGS[booru][mature_rating]}'
             else:
                 add_tags = '&tags=-animated'
             

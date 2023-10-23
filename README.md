@@ -58,7 +58,7 @@ Check the usage.md file for a detailed explanation of how to use the extension.
 
 ## Found an issue?  
 If you found an issue with the extension, please report it in the issues section of this repository.  
-Special thanks to [TheGameratorT](https://github.com/TheGameratorT) for contributing.
+Special thanks to [TheGameratorT](https://github.com/TheGameratorT) and [SmashinFries](https://github.com/SmashinFries) for contributing.
 
 ## Check out my other scripts
 - [Ranbooru](https://github.com/Inzaniak/sd-webui-ranbooru)

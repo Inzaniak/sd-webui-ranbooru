@@ -594,7 +594,7 @@ class Script(scripts.Script):
             else:
                 proc = process_images(p)
         elif lora_enabled:
-            p = self.loranado(lora_enabled,lora_folder,lora_amount,lora_min,lora_max,lora_custom_weights,p)
+            p = self.loranado(lora_enabled,lora_folder,lora_amount,lora_min,lora_max,lora_custom_weights,p,lora_lock_prev)
             proc = process_images(p)
         else:
             proc = process_images(p)

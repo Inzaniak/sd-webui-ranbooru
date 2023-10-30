@@ -267,7 +267,7 @@ class Script(scripts.Script):
                 shuffle_tags = gr.Checkbox(label="Shuffle tags", value=True)
                 change_dash = gr.Checkbox(label='Convert "_" to spaces', value=False)
                 same_prompt = gr.Checkbox(label="Use same prompt for all images", value=False)
-                fringe_benefits = gr.Checkbox(label="Fringe Benifits", value=True)
+                fringe_benefits = gr.Checkbox(label="Fringe Benefits", value=True)
                 limit_tags = gr.Slider(value=1.0, label="Limit tags", minimum=0.05, maximum=1.0, step=0.05)
                 max_tags = gr.Slider(value=100, label="Max tags", minimum=1, maximum=100, step=1)
                 change_background = gr.Radio(["Don't Change","Add Background","Remove Background","Remove All"], label="Change Background", value="Don't Change")

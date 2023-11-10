@@ -569,18 +569,13 @@ class Script(scripts.Script):
             if use_img2img:
                 self.real_steps = p.steps
                 p.steps = 1
-                # proc = process_images(p2)
                 self.last_img = last_img
             else:
                 pass
-                # proc = process_images(p)
         elif lora_enabled:
             p = self.loranado(lora_enabled,lora_folder,lora_amount,lora_min,lora_max,lora_custom_weights,p,lora_lock_prev)
-            # proc = process_images(p)
         else:
             pass
-            # proc = process_images(p)
-        # return proc
         
     def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev):
         if use_img2img:

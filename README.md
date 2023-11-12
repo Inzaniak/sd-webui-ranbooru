@@ -5,7 +5,7 @@ Ranbooru is an extension for the [automatic111 Stable Diffusion UI](https://gith
 
 ## Installation
 Just copy the script from the scripts folder above into the extensions folder of your 1111automatic installation. Then restart 1111automatic, by clicking the "Reload UI" button on the bottom of the page.
-To run the extension just scroll down in the txt2img or img2img panel to the script selection and select Ranbooru.
+You should find a new panel called "Ranbooru" on the bottom of the page.
 
 ## Features
 The extension is now divided into two main functionalities that can be used together or separately:
@@ -29,6 +29,7 @@ Here's an explanation of all the parameters:
 - **Change Color**: This tries to change the color of the parsed tags by adding or removing specific tags
 - **Sorting Order**: This orders the result of the scraped pictures by high or low score and make it more or less likely to get a high or low score picture. This is applied AFTER the results are scraped, because you cannot use the API to search for high ranking pictures.
 - **Use img2img**: This uses not only the tags from the random image, but also the original picture to generate the final result.
+- **Send to controlnet**: This sends the first image of the batch to the controlnet. (Requires a dummy image selected inside the controlnet panel)
 - **Denoising Strength**: This is the strength of the denoising filter. The higher the value, the more the picture will change from the original.
 - **Use last image as img2img** This uses the same picture for all the img2img generations in the same batch.
 - **Mix Prompts**: This mixes tags from different random images.
@@ -53,8 +54,9 @@ Check the usage.md file for a detailed explanation of how to use the extension.
 
 ## Known Issues
 - The chaos mode and negative mode can return an error when using a batch size greater than 1 combined with a batch count greater than 1. Rerunning the batch usually fixes the issue.
-- Right now the Mature Rating option seems to work only on Gelbooru, and only for "Questionable" and "Explicit" values.
 - "sd-dynamic-prompts" creates problems with the multiple prompts option. Disabling the extension is the only solution for now.
+- Right now to run the img2img the extension creates an img with 1 step before creating the actual image. I don't know how to fix this, if someone want to help me with this I'd be grateful.
+- Send to controlnet needs an dummy image to work.
 
 ## Found an issue?  
 If you found an issue with the extension, please report it in the issues section of this repository.  

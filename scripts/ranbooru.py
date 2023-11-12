@@ -52,6 +52,12 @@ def get_available_ratings(booru):
     mature_ratings =  gr.Radio.update(choices=RATINGS[booru].keys(), value="All")
     return mature_ratings
 
+def show_fringe_benefits(booru):
+    if booru == 'gelbooru':
+        return gr.Checkbox.update(visible=True)
+    else:
+        return gr.Checkbox.update(visible=False)
+
 def check_exception(booru, parameters):
     post_id = parameters.get('post_id')
     tags = parameters.get('tags')
@@ -76,14 +82,18 @@ class Booru():
     
 class Gelbooru(Booru):
     
-    def __init__(self):
+    def __init__(self, fringe_benefits):
         super().__init__('gelbooru', f'https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit={POST_AMOUNT}')
-        
+        self.fringeBenefits = fringe_benefits
+
     def get_data(self, add_tags, max_pages=10, id=''):
         if id:
             add_tags = ''
         self.booru_url = f"{self.booru_url}&pid={random.randint(0,max_pages)}{id}{add_tags}"
-        res = requests.get(self.booru_url)
+        if self.fringeBenefits:
+            res = requests.get(self.booru_url, cookies={'fringeBenefits': 'yup'})
+        else:
+            res = requests.get(self.booru_url)
         data = res.json()
         return data
     
@@ -259,6 +269,7 @@ class Script(scripts.Script):
                 shuffle_tags = gr.Checkbox(label="Shuffle tags", value=True)
                 change_dash = gr.Checkbox(label='Convert "_" to spaces', value=False)
                 same_prompt = gr.Checkbox(label="Use same prompt for all images", value=False)
+                fringe_benefits = gr.Checkbox(label="Fringe Benefits", value=True)
                 limit_tags = gr.Slider(value=1.0, label="Limit tags", minimum=0.05, maximum=1.0, step=0.05)
                 max_tags = gr.Slider(value=100, label="Max tags", minimum=1, maximum=100, step=1)
                 change_background = gr.Radio(["Don't Change","Add Background","Remove Background","Remove All"], label="Change Background", value="Don't Change")
@@ -266,6 +277,7 @@ class Script(scripts.Script):
                 sorting_order = gr.Radio(["Random","High Score","Low Score"], label="Sorting Order", value="Random")
                 
                 booru.change(get_available_ratings, booru, mature_rating) # update available ratings
+                booru.change(show_fringe_benefits, booru, fringe_benefits) # display fringe benefits checkbox if gelbooru is selected
                 
                 gr.Markdown("""\n---\n""")
                 with gr.Group():
@@ -294,7 +306,7 @@ class Script(scripts.Script):
                     lora_min = gr.Slider(value=-1.0, label="Min LoRAs Weight", minimum=-1.0, maximum=1, step=0.1)
                     lora_max = gr.Slider(value=1.0, label="Max LoRAs Weight", minimum=-1.0, maximum=1.0, step=0.1)
                     lora_custom_weights = gr.Textbox(lines=1, label="LoRAs Custom Weights")
-        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev]
+        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev]
                     
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -332,11 +344,11 @@ class Script(scripts.Script):
                 pass
         return p
 
-    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev):
+    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev):
         if enabled:
             # Initialize APIs
             booru_apis = {
-                'gelbooru': Gelbooru(),
+                'gelbooru': Gelbooru(fringe_benefits),
                 'rule34': Rule34(),
                 'safebooru': Safebooru(),
                 'danbooru': Danbooru(),
@@ -397,7 +409,7 @@ class Script(scripts.Script):
             last_img = []
             data = {'post': [{'tags': ''}]}
             preview_urls = []
-            api_url = booru_apis.get(booru, Gelbooru())
+            api_url = booru_apis.get(booru, Gelbooru(fringe_benefits))
             print(f'Using {booru}')
 
             data = api_url.get_data(add_tags, max_pages, post_url)
@@ -577,7 +589,7 @@ class Script(scripts.Script):
         else:
             pass
         
-    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev):
+    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev):
         if use_img2img:
             print('Using pictures')
             width, height = self.check_orientation(self.last_img[0])

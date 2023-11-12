@@ -6,6 +6,7 @@ import gradio as gr
 import os
 from PIL import Image
 import numpy as np
+import importlib
 
 from modules import images
 from modules.processing import process_images, StableDiffusionProcessingImg2Img
@@ -283,6 +284,7 @@ class Script(scripts.Script):
                 with gr.Group():
                     with gr.Accordion("Img2Img", open = False):
                         use_img2img = gr.Checkbox(label="Use img2img", value=False)
+                        use_ip = gr.Checkbox(label="Send to Controlnet", value=False)
                         denoising = gr.Slider(value=0.75, label="Denoising", minimum=0.05, maximum=1.0, step=0.05)
                         use_last_img = gr.Checkbox(label="Use last image as img2img", value=False)
                 with gr.Group():
@@ -306,7 +308,7 @@ class Script(scripts.Script):
                     lora_min = gr.Slider(value=-1.0, label="Min LoRAs Weight", minimum=-1.0, maximum=1, step=0.1)
                     lora_max = gr.Slider(value=1.0, label="Max LoRAs Weight", minimum=-1.0, maximum=1.0, step=0.1)
                     lora_custom_weights = gr.Textbox(lines=1, label="LoRAs Custom Weights")
-        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev]
+        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip]
                     
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -344,7 +346,7 @@ class Script(scripts.Script):
                 pass
         return p
 
-    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev):
+    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip):
         if enabled:
             # Initialize APIs
             booru_apis = {
@@ -522,12 +524,12 @@ class Script(scripts.Script):
                 if type(p.prompt) == list:
                     new_positive_prompts = []
                     new_negative_prompts = []
-                    for pr, np in zip(p.prompt, p.negative_prompt):
+                    for pr, npp in zip(p.prompt, p.negative_prompt):
                         clean_prompt = pr.split(',')
                         clean_prompt = [tag for tag in clean_prompt if tag not in orig_list]
                         clean_prompt = ','.join(clean_prompt)
                         new_positive_prompts.append(original_prompt)
-                        new_negative_prompts.append(f'{np},{clean_prompt}')
+                        new_negative_prompts.append(f'{npp},{clean_prompt}')
                     p.prompt = new_positive_prompts
                     p.negative_prompt = new_negative_prompts
                 else:
@@ -579,9 +581,20 @@ class Script(scripts.Script):
             p = self.loranado(lora_enabled,lora_folder,lora_amount,lora_min,lora_max,lora_custom_weights,p,lora_lock_prev)
                     
             if use_img2img:
-                self.real_steps = p.steps
-                p.steps = 1
-                self.last_img = last_img
+                if not use_ip:
+                    self.real_steps = p.steps
+                    p.steps = 1
+                    self.last_img = last_img
+                if use_ip:
+                    controlNetModule = importlib.import_module('extensions.sd-webui-controlnet.scripts.external_code',
+                                                                'external_code')
+                    controlNetList = controlNetModule.get_all_units_in_processing(p)
+                    copied_network = controlNetList[0].__dict__.copy()
+                    array_img = np.array(last_img[0])
+                    copied_network['image']['image'] = array_img
+                    copied_networks = [copied_network] + controlNetList[1:]
+                    controlNetModule.update_cn_script_in_processing(p, copied_networks)
+                
             else:
                 pass
         elif lora_enabled:
@@ -589,8 +602,8 @@ class Script(scripts.Script):
         else:
             pass
         
-    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev):
-        if use_img2img:
+    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip):
+        if use_img2img and not use_ip:
             print('Using pictures')
             width, height = self.check_orientation(self.last_img[0])
             p = StableDiffusionProcessingImg2Img(

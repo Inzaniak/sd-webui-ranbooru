@@ -238,6 +238,29 @@ class Script(scripts.Script):
         self.previous_loras = ''
         self.last_img = []
         self.real_steps = 0
+        self.version = "1.2"
+        self.initialize_folders()
+        
+    def initialize_folders(self):
+        # if the subfolder scripts\ranbooru doesn't exist, create it
+        if not os.path.exists('scripts/ranbooru'):
+            os.makedirs('scripts/ranbooru')
+            os.makedirs('scripts/ranbooru/search')
+            os.makedirs('scripts/ranbooru/remove')
+        # create two files: tags_search and tags_remove if they don't exist
+        if not os.path.exists('scripts/ranbooru/tags_search.txt'):
+            with open('scripts/ranbooru/search/tags_search.txt', 'w') as f:
+                f.write('')
+        if not os.path.exists('scripts/ranbooru/tags_remove.txt'):
+            with open('scripts/ranbooru/remove/tags_remove.txt', 'w') as f:
+                f.write('')
+                
+    def get_files(self, path):
+        files = []
+        for file in os.listdir(path):
+            if file.endswith('.txt'):
+                files.append(file)
+        return files
         
     def hide_object(self, obj, booru):
         print(f'hide_object: {obj}, {booru.value}')
@@ -288,6 +311,12 @@ class Script(scripts.Script):
                         denoising = gr.Slider(value=0.75, label="Denoising", minimum=0.05, maximum=1.0, step=0.05)
                         use_last_img = gr.Checkbox(label="Use last image as img2img", value=False)
                 with gr.Group():
+                    with gr.Accordion("File", open = False):
+                        use_search_txt = gr.Checkbox(label="Use tags_search.txt", value=False)
+                        choose_search_txt = gr.Dropdown(self.get_files('scripts/ranbooru/search'), label="Choose tags_search.txt", value="")
+                        use_remove_txt = gr.Checkbox(label="Use tags_remove.txt", value=False)
+                        choose_remove_txt = gr.Dropdown(self.get_files('scripts/ranbooru/remove'), label="Choose tags_remove.txt", value="")
+                with gr.Group():
                     with gr.Accordion("Extra", open = False):
                         with gr.Box():
                             mix_prompt = gr.Checkbox(label="Mix prompts", value=False)
@@ -308,7 +337,7 @@ class Script(scripts.Script):
                     lora_min = gr.Slider(value=-1.0, label="Min LoRAs Weight", minimum=-1.0, maximum=1, step=0.1)
                     lora_max = gr.Slider(value=1.0, label="Max LoRAs Weight", minimum=-1.0, maximum=1.0, step=0.1)
                     lora_custom_weights = gr.Textbox(lines=1, label="LoRAs Custom Weights")
-        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip]
+        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt]
                     
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -346,7 +375,7 @@ class Script(scripts.Script):
                 p.prompt = f'{lora_prompt} {p.prompt}'
         return p
 
-    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip):
+    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt):
         if enabled:
             # Initialize APIs
             booru_apis = {
@@ -378,6 +407,8 @@ class Script(scripts.Script):
                 bad_tags.extend(remove_tags.split(','))
             else:
                 bad_tags.append(remove_tags)
+            if use_remove_txt:
+                bad_tags.extend(open(f'scripts/ranbooru/remove/{choose_remove_txt}', 'r').read().split(','))
                 
             # Manage Backgrounds
             if change_background == 'Add Background':
@@ -397,6 +428,11 @@ class Script(scripts.Script):
                 p.prompt = (p.prompt + ',' if p.prompt else '') + ','.join(BW_BG)
             
             add_tags = ''
+            if use_search_txt:
+                if tags:
+                    tags += ','+open(f'scripts/ranbooru/search/{choose_search_txt}', 'r').read()
+                else:
+                    tags = open(f'scripts/ranbooru/search/{choose_search_txt}', 'r').read()
             if tags != '':
                 add_tags = f'&tags=-animated+{tags.replace(",", "+")}'
                 if mature_rating != 'All':
@@ -453,7 +489,8 @@ class Script(scripts.Script):
                             random_post = data['post'][random_number]
                         except IndexError:
                             raise Exception("No posts found with those tags. Try lowering the pages or changing the tags.")
-                temp_tags = random_post['tags'].split(' ')
+                clean_tags = random_post['tags'].replace('(','\(').replace(')','\)')
+                temp_tags = clean_tags.split(' ')
                 if shuffle_tags:
                     temp_tags = random.sample(temp_tags, len(temp_tags))
                 prompts.append(','.join(temp_tags))

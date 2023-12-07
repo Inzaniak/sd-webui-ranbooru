@@ -512,7 +512,11 @@ class Script(scripts.Script):
                         last_img.append(Image.open(BytesIO(response.content)))
             new_prompts = []
             for prompt in prompts:
-                new_prompt = ','.join([tag for tag in prompt.split(',') if tag.strip() not in bad_tags])     
+                new_prompt = ','.join([tag for tag in prompt.split(',') if tag.strip() not in bad_tags])
+                # loop over bad_tags containing * and remove from new_prompt every tag that contains the string
+                for bad_tag in bad_tags:
+                    if '*' in bad_tag:
+                        new_prompt = ','.join([tag for tag in new_prompt.split(',') if bad_tag.replace('*','') not in tag])     
                 if change_dash:
                     new_prompt = new_prompt.replace("_", " ")
                 new_prompts.append(new_prompt)

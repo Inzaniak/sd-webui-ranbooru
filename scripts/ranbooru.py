@@ -248,10 +248,10 @@ class Script(scripts.Script):
             os.makedirs('scripts/ranbooru/search')
             os.makedirs('scripts/ranbooru/remove')
         # create two files: tags_search and tags_remove if they don't exist
-        if not os.path.exists('scripts/ranbooru/tags_search.txt'):
+        if not os.path.exists('scripts/ranbooru/search/tags_search.txt'):
             with open('scripts/ranbooru/search/tags_search.txt', 'w') as f:
                 f.write('')
-        if not os.path.exists('scripts/ranbooru/tags_remove.txt'):
+        if not os.path.exists('scripts/ranbooru/remove/tags_remove.txt'):
             with open('scripts/ranbooru/remove/tags_remove.txt', 'w') as f:
                 f.write('')
                 

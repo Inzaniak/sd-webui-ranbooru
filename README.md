@@ -17,7 +17,7 @@ Here's an explanation of all the parameters:
 - **Max Pages**: The maximum amount of pages to get the tags from. The extension will get a random page from the booru and then get the tags from one or more random pictures from that page.
 - **Post ID**: Here you can specify the ID of the post to get the tags from. If you leave it blank, the extension will get a random post (or more than one) from the random page.
 - **Tags to Search (Pre)**: This add the tags you define (this should be separated by commas e.g: 1girl,solo,short_hair) to the search query. This is useful if you want to get tags from a specific category, like "1girl" or "solo".
-- **Tags to Remove (Post)**: This remove the tags you define (this should be separated by commas e.g: 1girl,solo,short_hair) from the result query. This is useful if you want to remove tags that are too generic, like "1girl" or "solo".
+- **Tags to Remove (Post)**: This remove the tags you define (this should be separated by commas e.g: 1girl,solo,short_hair) from the result query. This is useful if you want to remove tags that are too generic, like "1girl" or "solo". You can also use * with any tag to remove every tags which contains the related word. e.g: *hair will remove every tag that contains the word "hair".
 - **Mature Rating**: This sets the mature rating of the booru. This is useful if you want to get only SFW or NSFW tags. It only works on supported boorus (right now it has been tested only on Gelbooru).
 - **Remove Bad Tags**: This remove tags that you usually don't need (watermarks,text,censor)
 - **Shuffle Tags**: This shuffle the tags before adding them to the text.
@@ -32,6 +32,10 @@ Here's an explanation of all the parameters:
 - **Send to controlnet**: This sends the first image of the batch to the controlnet. (Requires a dummy image selected inside the controlnet panel)
 - **Denoising Strength**: This is the strength of the denoising filter. The higher the value, the more the picture will change from the original.
 - **Use last image as img2img** This uses the same picture for all the img2img generations in the same batch.
+- **Use tags_search.txt**: This uses the tags from the specified file in the scripts folder. This is useful if you want to use a specific set of tags.
+- **Choose tags_search.txt**: This is the file to use with the tags_search.txt option. You can add new files in the stable-diffusion-webui\scripts\ranbooru folder.
+- **Use tags_remove.txt**: This removes the tags from the specified file in the scripts folder. This is useful if you want to remove a specific set of tags.
+- **Choose tags_remove.txt**: This is the file to use with the tags_remove.txt option. You can add new files in the stable-diffusion-webui\scripts\ranbooru folder.
 - **Mix Prompts**: This mixes tags from different random images.
 - **Mix Amount**: This sets the number of pictures to grab random tags from.
 - **Chaos Mode**: This mixes the tags between the positive and negative prompt. If set to Less Chaos, it won't move the tags you insert in the negative prompt.
@@ -51,6 +55,11 @@ Here's an explanation of all the parameters:
 
 ## How to use
 Check the usage.md file for a detailed explanation of how to use the extension.
+
+## Changelog
+### 1.2
+- Added the ability to use txt files for search and remove tags
+- Added the ability to use * in the remove tags to remove every tag that contains the word (also works with the tags:remove.txt)
 
 ## Known Issues
 - The chaos mode and negative mode can return an error when using a batch size greater than 1 combined with a batch count greater than 1. Rerunning the batch usually fixes the issue.

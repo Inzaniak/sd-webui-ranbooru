@@ -402,7 +402,7 @@ class Script(scripts.Script):
             # Manage Bad Tags
             bad_tags = []
             if remove_bad_tags:
-                bad_tags = ['mixed-language_text','watermark','text','english_text','speech_bubble','signature','artist_name','censored','bar_censor','translation','twitter_username',"twitter_logo",'patreon_username','commentary_request','tagme','commentary','character_name','mosaic_censoring','instagram_username','text_focus','english_commentary','comic','translation_request','fake_text','translated','paid_reward_available','thought_bubble','multiple_views','silent_comic','out-of-frame_censoring','symbol-only_commentary','3koma','2koma','character_watermark','spoken_question_mark','japanese_text','spanish_text','language_text','fanbox_username','commission','original','ai_generated','stable_diffusion','tagme_(artist)','text_bubble','qr_code','chinese_commentary','korean_text','partial_commentary','chinese_text','copyright_request','heart_censor','censored_nipples']
+                bad_tags = ['mixed-language_text','watermark','text','english_text','speech_bubble','signature','artist_name','censored','bar_censor','translation','twitter_username',"twitter_logo",'patreon_username','commentary_request','tagme','commentary','character_name','mosaic_censoring','instagram_username','text_focus','english_commentary','comic','translation_request','fake_text','translated','paid_reward_available','thought_bubble','multiple_views','silent_comic','out-of-frame_censoring','symbol-only_commentary','3koma','2koma','character_watermark','spoken_question_mark','japanese_text','spanish_text','language_text','fanbox_username','commission','original','ai_generated','stable_diffusion','tagme_(artist)','text_bubble','qr_code','chinese_commentary','korean_text','partial_commentary','chinese_text','copyright_request','heart_censor','censored_nipples','page_number','scan','fake_magazine_cover','korean_commentary']
             if ',' in remove_tags:
                 bad_tags.extend(remove_tags.split(','))
             else:
@@ -643,7 +643,7 @@ class Script(scripts.Script):
         else:
             pass
         
-    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip):
+    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt):
         if use_img2img and not use_ip:
             print('Using pictures')
             width, height = self.check_orientation(self.last_img[0])

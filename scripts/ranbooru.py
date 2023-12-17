@@ -13,6 +13,7 @@ from modules.processing import process_images, StableDiffusionProcessingImg2Img
 from modules import shared
 from modules.img2img import img2img
 from modules.sd_hijack import model_hijack
+from modules.deepbooru import DeepDanbooru
 
 COLORED_BG = ['black_background','aqua_background','white_background','colored_background','gray_background','blue_background','green_background','red_background','brown_background','purple_background','yellow_background','orange_background','pink_background','plain','transparent_background','simple_background','two-tone_background','grey_background']
 ADD_BG = ['outdoors','indoors']
@@ -277,6 +278,7 @@ class Script(scripts.Script):
         self.real_steps = 0
         self.version = "1.2"
         self.initialize_folders()
+        self.ddb = DeepDanbooru()
         
     def initialize_folders(self):
         # if the subfolder scripts\ranbooru doesn't exist, create it
@@ -348,6 +350,7 @@ class Script(scripts.Script):
                         denoising = gr.Slider(value=0.75, label="Denoising", minimum=0.05, maximum=1.0, step=0.05)
                         use_last_img = gr.Checkbox(label="Use last image as img2img", value=False)
                         crop_center = gr.Checkbox(label="Crop Center", value=False)
+                        use_deepbooru = gr.Checkbox(label="Use Deepbooru", value=False)
                 with gr.Group():
                     with gr.Accordion("File", open = False):
                         use_search_txt = gr.Checkbox(label="Use tags_search.txt", value=False)
@@ -375,7 +378,7 @@ class Script(scripts.Script):
                     lora_min = gr.Slider(value=-1.0, label="Min LoRAs Weight", minimum=-1.0, maximum=1, step=0.1)
                     lora_max = gr.Slider(value=1.0, label="Max LoRAs Weight", minimum=-1.0, maximum=1.0, step=0.1)
                     lora_custom_weights = gr.Textbox(lines=1, label="LoRAs Custom Weights")
-        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center]
+        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center, use_deepbooru]
                     
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -413,7 +416,7 @@ class Script(scripts.Script):
                 p.prompt = f'{lora_prompt} {p.prompt}'
         return p
 
-    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center):
+    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center,use_deepbooru):
         if enabled:
             # Initialize APIs
             booru_apis = {
@@ -683,7 +686,7 @@ class Script(scripts.Script):
         else:
             pass
         
-    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center):
+    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center,use_deepbooru):
         if use_img2img and not use_ip:
             print('Using pictures')
             if crop_center:
@@ -691,11 +694,14 @@ class Script(scripts.Script):
                 self.last_img = [resize_image(img, width, height, cropping=True) for img in self.last_img]
             else:
                 width, height = self.check_orientation(self.last_img[0])
+            final_prompts = p.prompt
+            if use_deepbooru:
+                final_prompts = [self.ddb.tag(img) for img in self.last_img]
             p = StableDiffusionProcessingImg2Img(
                 sd_model=shared.sd_model,
                 outpath_samples=shared.opts.outdir_samples or shared.opts.outdir_img2img_samples,
                 outpath_grids=shared.opts.outdir_grids or shared.opts.outdir_img2img_grids,
-                prompt=p.prompt,
+                prompt=final_prompts,
                 negative_prompt=p.negative_prompt,
                 seed=p.seed,
                 sampler_name='Euler a',
@@ -710,6 +716,7 @@ class Script(scripts.Script):
             )
             proc = process_images(p)
             processed.images = proc.images
+            processed.infotexts = proc.infotexts
             if use_last_img:
                     processed.images.append(self.last_img[0])
             else:

@@ -232,6 +232,43 @@ def generate_chaos(pos_tags,neg_tags,chaos_amount):
     neg_prompt = ','.join(neg_list)
     return pos_prompt, neg_prompt
 
+def resize_image(img, width, height, cropping=True):
+    """Resize image to specified width and height"""
+    if cropping:
+        # resize the picture and center crop it
+        # example: you have a 100x200 picture and width=300 and height=300
+        # resize to 300x600 and crop to 300x300 from the center
+        x,y = img.size
+        if x < y:
+            # scale to width keeping aspect ratio
+            wpercent = (width / float(img.size[0]))
+            hsize = int((float(img.size[1]) * float(wpercent)))
+            img_new = img.resize((width, hsize))
+            if img_new.size[1] < height:
+                # scale to height keeping aspect ratio
+                hpercent = (height / float(img.size[1]))
+                wsize = int((float(img.size[0]) * float(hpercent)))
+                img_new = img.resize((wsize, height))
+        else:
+            ypercent = (height / float(img.size[1]))
+            wsize = int((float(img.size[0]) * float(ypercent)))
+            img_new = img.resize((wsize, height))
+            if img_new.size[0] < width:
+                xpercent = (width / float(img.size[0]))
+                hsize = int((float(img.size[1]) * float(xpercent)))
+                img_new = img.resize((width, hsize))
+            
+        # crop center
+        x,y = img_new.size
+        left = (x - width)/2
+        top = (y - height)/2
+        right = (x + width)/2
+        bottom = (y + height)/2
+        img = img_new.crop((left, top, right, bottom))
+    else:
+        img = img.resize((width, height))
+    return img
+
 class Script(scripts.Script):   
     
     def __init__(self):
@@ -310,6 +347,7 @@ class Script(scripts.Script):
                         use_ip = gr.Checkbox(label="Send to Controlnet", value=False)
                         denoising = gr.Slider(value=0.75, label="Denoising", minimum=0.05, maximum=1.0, step=0.05)
                         use_last_img = gr.Checkbox(label="Use last image as img2img", value=False)
+                        crop_center = gr.Checkbox(label="Crop Center", value=False)
                 with gr.Group():
                     with gr.Accordion("File", open = False):
                         use_search_txt = gr.Checkbox(label="Use tags_search.txt", value=False)
@@ -337,7 +375,7 @@ class Script(scripts.Script):
                     lora_min = gr.Slider(value=-1.0, label="Min LoRAs Weight", minimum=-1.0, maximum=1, step=0.1)
                     lora_max = gr.Slider(value=1.0, label="Max LoRAs Weight", minimum=-1.0, maximum=1.0, step=0.1)
                     lora_custom_weights = gr.Textbox(lines=1, label="LoRAs Custom Weights")
-        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt]
+        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center]
                     
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -375,7 +413,7 @@ class Script(scripts.Script):
                 p.prompt = f'{lora_prompt} {p.prompt}'
         return p
 
-    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt):
+    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center):
         if enabled:
             # Initialize APIs
             booru_apis = {
@@ -631,6 +669,8 @@ class Script(scripts.Script):
                                                                 'external_code')
                     controlNetList = controlNetModule.get_all_units_in_processing(p)
                     copied_network = controlNetList[0].__dict__.copy()
+                    copied_network['enabled'] = True
+                    copied_network['weight'] = denoising
                     array_img = np.array(last_img[0])
                     copied_network['image']['image'] = array_img
                     copied_networks = [copied_network] + controlNetList[1:]
@@ -643,10 +683,14 @@ class Script(scripts.Script):
         else:
             pass
         
-    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt):
+    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center):
         if use_img2img and not use_ip:
             print('Using pictures')
-            width, height = self.check_orientation(self.last_img[0])
+            if crop_center:
+                width, height = p.width, p.height
+                self.last_img = [resize_image(img, width, height, cropping=True) for img in self.last_img]
+            else:
+                width, height = self.check_orientation(self.last_img[0])
             p = StableDiffusionProcessingImg2Img(
                 sd_model=shared.sd_model,
                 outpath_samples=shared.opts.outdir_samples or shared.opts.outdir_img2img_samples,

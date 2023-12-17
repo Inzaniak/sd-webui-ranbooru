@@ -32,6 +32,8 @@ Here's an explanation of all the parameters:
 - **Send to controlnet**: This sends the first image of the batch to the controlnet. (Requires a dummy image selected inside the controlnet panel)
 - **Denoising Strength**: This is the strength of the denoising filter. The higher the value, the more the picture will change from the original.
 - **Use last image as img2img** This uses the same picture for all the img2img generations in the same batch.
+- **Crop Center**: This crops the parsed images to the center before processing. This is useful if you want to keep the width/height you set.
+- **Use Deepbooru**: This uses the Deepbooru Model to get the tags from the random image, instead of the existing ones. This is useful if you want to get more tags from the image.
 - **Use tags_search.txt**: This uses the tags from the specified file in the scripts folder. This is useful if you want to use a specific set of tags.
 - **Choose tags_search.txt**: This is the file to use with the tags_search.txt option. You can add new files in the stable-diffusion-webui\scripts\ranbooru folder.
 - **Use tags_remove.txt**: This removes the tags from the specified file in the scripts folder. This is useful if you want to remove a specific set of tags.

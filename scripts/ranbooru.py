@@ -526,7 +526,7 @@ class Script(scripts.Script):
             if post_id:
                 data = api_url.get_post(add_tags, max_pages, post_id)
             else:
-                data = api_url.get_data(add_tags, max_pages, post_url)
+                data = api_url.get_data(add_tags, max_pages)
 
             print(api_url.booru_url)
             # Replace null scores with 0

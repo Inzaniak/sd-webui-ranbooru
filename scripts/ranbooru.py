@@ -82,6 +82,9 @@ class Booru():
     def get_data(self,add_tags,max_pages=10, id=''):
         pass
     
+    def get_post(self,add_tags,max_pages=10, id=''):
+        pass
+    
 class Gelbooru(Booru):
     
     def __init__(self, fringe_benefits):
@@ -99,6 +102,10 @@ class Gelbooru(Booru):
         data = res.json()
         return data
     
+    def get_post(self, add_tags, max_pages=10, id=''):
+        return self.get_data(add_tags, max_pages, "&id="+id)
+    
+    
 class XBooru(Booru):
     
     def __init__(self):
@@ -114,6 +121,9 @@ class XBooru(Booru):
             post['file_url'] = f"https://xbooru.com/images/{post['directory']}/{post['image']}"
         return {'post': data}
     
+    def get_post(self, add_tags, max_pages=10, id=''):
+        return self.get_data(add_tags, max_pages, "&id="+id)
+    
 class Rule34(Booru):
     
     def __init__(self):
@@ -126,6 +136,9 @@ class Rule34(Booru):
         res = requests.get(self.booru_url)
         data = res.json()
         return {'post': data}
+    
+    def get_post(self, add_tags, max_pages=10, id=''):
+        return self.get_data(add_tags, max_pages, "&id="+id)
     
 class Safebooru(Booru):
     
@@ -142,6 +155,9 @@ class Safebooru(Booru):
             post['file_url'] = f"https://safebooru.org/images/{post['directory']}/{post['image']}"
         return {'post': data}
     
+    def get_post(self, add_tags, max_pages=10, id=''):
+        return self.get_data(add_tags, max_pages, "&id="+id)
+    
 class Konachan(Booru):
     
     def __init__(self):
@@ -155,6 +171,9 @@ class Konachan(Booru):
         data = res.json()
         return {'post': data}
     
+    def get_post(self, add_tags, max_pages=10, id=''):
+        raise Exception("Konachan does not support post IDs")
+    
 class Yandere(Booru):
     
     def __init__(self):
@@ -167,6 +186,9 @@ class Yandere(Booru):
         res = requests.get(self.booru_url)
         data = res.json()
         return {'post': data}
+    
+    def get_post(self, add_tags, max_pages=10, id=''):
+        raise Exception("Yande.re does not support post IDs")
     
 class AIBooru(Booru):
     
@@ -183,6 +205,9 @@ class AIBooru(Booru):
             post['tags'] = post['tag_string']
         return {'post': data}
     
+    def get_post(self, add_tags, max_pages=10, id=''):
+        raise Exception("AIBooru does not support post IDs")
+    
 class Danbooru(Booru):
     
     def __init__(self):
@@ -197,6 +222,14 @@ class Danbooru(Booru):
         for post in data:
             post['tags'] = post['tag_string']
         return {'post': data}
+    
+    def get_post(self, add_tags, max_pages=10, id=''):
+        self.booru_url = f"https://danbooru.donmai.us/posts/{id}.json"
+        res = requests.get(self.booru_url, headers=self.headers)
+        data = res.json()
+        data['tags'] = data['tag_string']
+        data = {'post': [data]}
+        return data
     
 class e621(Booru):
     
@@ -217,6 +250,9 @@ class e621(Booru):
             post['tags'] = ' '.join(temp_tags)
             post['score'] = post['score']['total']
         return {'post': data}
+    
+    def get_post(self, add_tags, max_pages=10, id=''):
+        self.get_data(add_tags, max_pages, "&id="+id)
     
 def generate_chaos(pos_tags,neg_tags,chaos_amount):
     # create a list with the tags in the prompt and in the negative prompt
@@ -279,6 +315,7 @@ class Script(scripts.Script):
         self.version = "1.2"
         self.initialize_folders()
         self.ddb = DeepDanbooru()
+        self.original_prompt = ''
         
     def initialize_folders(self):
         # if the subfolder scripts\ranbooru doesn't exist, create it
@@ -430,16 +467,10 @@ class Script(scripts.Script):
                 'xbooru': XBooru(),
                 'e621': e621(),
             }
-            original_prompt = p.prompt
+            self.original_prompt = p.prompt
             # Check if compatible
             check_exception(booru, {'tags':tags,'post_id':post_id})
-            
-            # Manage Post ID
-            if post_id:
-                post_url = "&id="+post_id
-            else:
-                post_url = ""
-                
+
             # Manage Bad Tags
             bad_tags = []
             if remove_bad_tags:
@@ -491,7 +522,12 @@ class Script(scripts.Script):
             api_url = booru_apis.get(booru, Gelbooru(fringe_benefits))
             print(f'Using {booru}')
 
-            data = api_url.get_data(add_tags, max_pages, post_url)
+            # Manage Post ID
+            if post_id:
+                data = api_url.get_post(add_tags, max_pages, post_id)
+            else:
+                data = api_url.get_data(add_tags, max_pages, post_url)
+
             print(api_url.booru_url)
             # Replace null scores with 0
             for post in data['post']:
@@ -602,7 +638,7 @@ class Script(scripts.Script):
                         last_img = [last_img[0] for _ in range(0, p.batch_size*p.n_iter)]
             if negative_mode == 'Negative':
                 #remove tags from p.prompt using tags from the original prompt
-                orig_list = original_prompt.split(',')
+                orig_list = self.original_prompt.split(',')
                 if type(p.prompt) == list:
                     new_positive_prompts = []
                     new_negative_prompts = []
@@ -610,7 +646,7 @@ class Script(scripts.Script):
                         clean_prompt = pr.split(',')
                         clean_prompt = [tag for tag in clean_prompt if tag not in orig_list]
                         clean_prompt = ','.join(clean_prompt)
-                        new_positive_prompts.append(original_prompt)
+                        new_positive_prompts.append(self.original_prompt)
                         new_negative_prompts.append(f'{npp},{clean_prompt}')
                     p.prompt = new_positive_prompts
                     p.negative_prompt = new_negative_prompts
@@ -619,7 +655,7 @@ class Script(scripts.Script):
                     clean_prompt = [tag for tag in clean_prompt if tag not in orig_list]
                     clean_prompt = ','.join(clean_prompt)
                     p.negative_prompt = f'{p.negative_prompt},{clean_prompt}'
-                    p.prompt = original_prompt
+                    p.prompt = self.original_prompt
             if negative_mode == 'Negative' or chaos_mode in ['Chaos', 'Less Chaos']:
                 # NEGATIVE PROMPT FIX
                 neg_prompt_tokens = []
@@ -696,7 +732,13 @@ class Script(scripts.Script):
                 width, height = self.check_orientation(self.last_img[0])
             final_prompts = p.prompt
             if use_deepbooru:
-                final_prompts = [self.ddb.tag(img) for img in self.last_img]
+                orig_prompt = []
+                if type(self.original_prompt) == str:
+                    orig_prompt = [self.original_prompt]
+                else:
+                    orig_prompt = self.original_prompt
+                for img,prompt in zip(self.last_img,orig_prompt):
+                    final_prompts = [prompt+','+self.ddb.tag(img) for img in self.last_img]
             p = StableDiffusionProcessingImg2Img(
                 sd_model=shared.sd_model,
                 outpath_samples=shared.opts.outdir_samples or shared.opts.outdir_img2img_samples,
@@ -720,8 +762,9 @@ class Script(scripts.Script):
             if use_last_img:
                     processed.images.append(self.last_img[0])
             else:
-                for img in self.last_img:
+                for num,img in enumerate(self.last_img):
                     processed.images.append(img)
+                    processed.infotexts.append(proc.infotexts[num+1])
         
 
     def random_number(self, sorting_order):

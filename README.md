@@ -56,7 +56,8 @@ Here's an explanation of all the parameters:
 - **LoRAs Custom Weights**: Here you can specify the weight to use with the random LoRAs (separated by commas). If you leave it blank, the extension will use the min and max weights. Example: if you have 3 LoRAs you can write: 0.2,0.3,0.5.
 
 ## How to use
-Check the usage.md file for a detailed explanation of how to use the extension.
+Check the usage.md file for a detailed explanation of how to use the extension.  
+Also check my article on [CivitAI](https://civitai.com/articles/3357/ranbooru-the-comprehensive-guide).
 
 ## Changelog
 ### 1.2

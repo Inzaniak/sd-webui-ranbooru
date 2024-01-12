@@ -23,6 +23,7 @@ Here's an explanation of all the parameters:
 - **Shuffle Tags**: This shuffle the tags before adding them to the text.
 - **Convert** "\_" to Spaces": This convert \_ to spaces in the tags.
 - **Use the same prompt for all images**: This use the same prompt for all the generated images in the same batch. If not selected, each image will have a different prompt.
+- **Fringe Benefits**: This option is available only for Gelbooru and enables all the hidden content available on the website. This is equivalent to enabling the "Display all site content" flag in the Gelbooru website settings.
 - **Limit Tags**: This limits the number of tags to use in percentage of the original tags. For example, if you set it to 50, it will use only half of the tags.
 - **Max Tags**: This limits the number of tags to use.
 - **Change Background**: This tries to change the background of the parsed tags by adding or removing specific tags

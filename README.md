@@ -43,6 +43,7 @@ Here's an explanation of all the parameters:
 - **Chaos Mode**: This mixes the tags between the positive and negative prompt. If set to Less Chaos, it won't move the tags you insert in the negative prompt.
 - **Chaos Amount**: This sets the percentage of tags to move to the negative prompt.
 - **Negative Mode**: This moves all the tags to the negative prompt.
+- **Use Same Seed**: This uses the same seed for all the generations in the same batch.
 
 ### LoRAnado
 This is a newer experimental function that enables you to pick random LoRAs from a folder and add them to the prompt. This can lead to interesting results.  

@@ -404,6 +404,7 @@ class Script(scripts.Script):
                             chaos_amount = gr.Slider(value=0.5, label="Chaos Amount %", minimum=0.1, maximum=1, step=0.05)
                         with gr.Box():
                             negative_mode = gr.Radio(["None","Negative"], label="Negative Mode", value="None")
+                            use_same_seed = gr.Checkbox(label="Use same seed for all pictures", value=False)
         with gr.Group():
             with gr.Accordion("LoRAnado", open = False):
                 with gr.Box():
@@ -415,7 +416,7 @@ class Script(scripts.Script):
                     lora_min = gr.Slider(value=-1.0, label="Min LoRAs Weight", minimum=-1.0, maximum=1, step=0.1)
                     lora_max = gr.Slider(value=1.0, label="Max LoRAs Weight", minimum=-1.0, maximum=1.0, step=0.1)
                     lora_custom_weights = gr.Textbox(lines=1, label="LoRAs Custom Weights")
-        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center, use_deepbooru]
+        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center, use_deepbooru, use_same_seed]
                     
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -453,7 +454,7 @@ class Script(scripts.Script):
                 p.prompt = f'{lora_prompt} {p.prompt}'
         return p
 
-    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center,use_deepbooru):
+    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center,use_deepbooru,use_same_seed):
         if enabled:
             # Initialize APIs
             booru_apis = {
@@ -695,6 +696,11 @@ class Script(scripts.Script):
                     clean_prompt = ','.join(clean_prompt)
                     p.prompt = clean_prompt
                     
+            if use_same_seed:
+                if p.seed == -1:
+                    p.seed = random.randint(0, 2**32-1)
+                p.seed = [p.seed for _ in range(0, p.batch_size)]
+                    
             # LORANADO
             p = self.loranado(lora_enabled,lora_folder,lora_amount,lora_min,lora_max,lora_custom_weights,p,lora_lock_prev)
                     
@@ -722,7 +728,7 @@ class Script(scripts.Script):
         else:
             pass
         
-    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center,use_deepbooru):
+    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center,use_deepbooru,use_same_seed):
         if use_img2img and not use_ip:
             print('Using pictures')
             if crop_center:

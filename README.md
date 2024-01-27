@@ -77,7 +77,7 @@ If you found an issue with the extension, please report it in the issues section
 Special thanks to [TheGameratorT](https://github.com/TheGameratorT) and [SmashinFries](https://github.com/SmashinFries) for contributing.
 
 ## Check out my other scripts
-- [Ranbooru](https://github.com/Inzaniak/sd-webui-ranbooru)
+- [Ranbooru for ComfyUI](https://github.com/Inzaniak/comfyui-ranbooru)
 - [Workflow](https://github.com/Inzaniak/sd-webui-workflow)
 
 ---

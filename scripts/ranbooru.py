@@ -539,23 +539,22 @@ class Script(scripts.Script):
                 data['post'] = sorted(data['post'], key=lambda k: k.get('score', 0), reverse=True)
             elif sorting_order == 'Low Score':
                 data['post'] = sorted(data['post'], key=lambda k: k.get('score', 0))
-            random_number = self.random_number(sorting_order)
+            random_numbers = self.random_number(sorting_order, p.batch_size*p.n_iter)
             if post_id:
-                random_number = 0
-            for _ in range(0, p.batch_size*p.n_iter):
+                print(f'Using post ID: {post_id}')
+                random_numbers = [0 for _ in range(0, p.batch_size*p.n_iter)]
+            for random_number in random_numbers:
                 if same_prompt:
-                    random_post = data['post'][random_number]
+                    random_post = data['post'][random_numbers[0]]
                 else:
-                    if not post_id:
-                        random_number = self.random_number(sorting_order)
                     if mix_prompt:
                         temp_tags = []
                         max_tags = 0
                         for _ in range(0, mix_amount):
                             if not post_id:
-                                random_number = self.random_number(sorting_order)
-                            temp_tags.extend(data['post'][random_number]['tags'].split(' '))
-                            max_tags = max(max_tags, len(data['post'][random_number]['tags'].split(' ')))
+                                random_mix_number = self.random_number(sorting_order,1)[0]
+                            temp_tags.extend(data['post'][random_mix_number]['tags'].split(' '))
+                            max_tags = max(max_tags, len(data['post'][random_mix_number]['tags'].split(' ')))
                         # distinct temp_tags
                         temp_tags = list(set(temp_tags))
                         random_post = data['post'][random_number]
@@ -773,12 +772,12 @@ class Script(scripts.Script):
                     processed.infotexts.append(proc.infotexts[num+1])
         
 
-    def random_number(self, sorting_order):
+    def random_number(self, sorting_order, size):
         # create weights so that the first element is more likely to be chosen than the next one
         weights = np.arange(POST_AMOUNT, 0, -1)
         weights = weights / weights.sum()
         if sorting_order in ('High Score', 'Low Score'):
-            random_number = np.random.choice(np.arange(POST_AMOUNT), p=weights)
+            random_numbers = np.random.choice(np.arange(POST_AMOUNT), size=size, p=weights, replace=False)
         else:
-            random_number = random.randint(0, POST_AMOUNT-1)
-        return random_number 
+            random_numbers = random.sample(range(POST_AMOUNT), size)
+        return random_numbers 

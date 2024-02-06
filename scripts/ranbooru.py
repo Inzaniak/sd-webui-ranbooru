@@ -728,7 +728,7 @@ class Script(scripts.Script):
             pass
         
     def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center,use_deepbooru,use_same_seed):
-        if use_img2img and not use_ip:
+        if use_img2img and not use_ip and enabled:
             print('Using pictures')
             if crop_center:
                 width, height = p.width, p.height

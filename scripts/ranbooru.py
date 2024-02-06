@@ -579,7 +579,7 @@ class Script(scripts.Script):
                 # Debug picture
                 if DEBUG:
                     print(random_post)
-            if use_img2img:
+            if use_img2img or use_deepbooru:
                 if use_last_img:
                     response = requests.get(random_post['file_url'], headers=api_url.headers)
                     last_img = [Image.open(BytesIO(response.content))]
@@ -702,6 +702,9 @@ class Script(scripts.Script):
                     
             # LORANADO
             p = self.loranado(lora_enabled,lora_folder,lora_amount,lora_min,lora_max,lora_custom_weights,p,lora_lock_prev)
+            if use_deepbooru and not use_img2img:
+                self.last_img = last_img
+                p.prompt = self.use_autotagger('deepbooru')
                     
             if use_img2img:
                 if not use_ip:
@@ -737,13 +740,7 @@ class Script(scripts.Script):
                 width, height = self.check_orientation(self.last_img[0])
             final_prompts = p.prompt
             if use_deepbooru:
-                orig_prompt = []
-                if type(self.original_prompt) == str:
-                    orig_prompt = [self.original_prompt]
-                else:
-                    orig_prompt = self.original_prompt
-                for img,prompt in zip(self.last_img,orig_prompt):
-                    final_prompts = [prompt+','+self.ddb.tag(img) for img in self.last_img]
+                final_prompts = self.use_autotagger('deepbooru')
             p = StableDiffusionProcessingImg2Img(
                 sd_model=shared.sd_model,
                 outpath_samples=shared.opts.outdir_samples or shared.opts.outdir_img2img_samples,
@@ -781,3 +778,14 @@ class Script(scripts.Script):
         else:
             random_numbers = random.sample(range(POST_AMOUNT), size)
         return random_numbers 
+
+    def use_autotagger(self,model):
+        if model == 'deepbooru':
+            orig_prompt = []
+            if type(self.original_prompt) == str:
+                orig_prompt = [self.original_prompt]
+            else:
+                orig_prompt = self.original_prompt
+            for img,prompt in zip(self.last_img,orig_prompt):
+                final_prompts = [prompt+','+self.ddb.tag(img) for img in self.last_img]
+            return final_prompts

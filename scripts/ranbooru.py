@@ -378,7 +378,7 @@ class Script(scripts.Script):
                 gr.Markdown("""## Tags""")
                 tags = gr.Textbox(lines=1, label="Tags to Search (Pre)")
                 remove_tags = gr.Textbox(lines=1, label="Tags to Remove (Post)")
-                mature_rating = gr.Radio(RATINGS['gelbooru'].keys(), label="Mature Rating", value="All")
+                mature_rating = gr.Radio(list(RATINGS['gelbooru']), label="Mature Rating", value="All")
                 remove_bad_tags = gr.Checkbox(label="Remove bad tags", value=True)
                 shuffle_tags = gr.Checkbox(label="Shuffle tags", value=True)
                 change_dash = gr.Checkbox(label='Convert "_" to spaces', value=False)
@@ -463,7 +463,7 @@ class Script(scripts.Script):
                     lora_prompt += f'<lora:{random.choice(loras)}:{lora_weight}>'
                     self.previous_loras = lora_prompt
         if lora_prompt:
-            if type(p.prompt) == list:
+            if isinstance(p.prompt, list):
                 for num, pr in enumerate(p.prompt):
                     p.prompt[num] = f'{lora_prompt} {pr}'
             else:
@@ -548,7 +548,7 @@ class Script(scripts.Script):
             print(api_url.booru_url)
             # Replace null scores with 0
             for post in data['post']:
-                if post['score'] == None:
+                if post['score'] is None:
                     post['score'] = 0
             # Sort based on sorting_order
             if sorting_order == 'High Score':
@@ -583,7 +583,7 @@ class Script(scripts.Script):
                         except IndexError:
                             raise Exception(
                                 "No posts found with those tags. Try lowering the pages or changing the tags.")
-                clean_tags = random_post['tags'].replace('(', '\(').replace(')', '\)')
+                clean_tags = random_post['tags'].replace('(', r'\(').replace(')', r'\)')
                 temp_tags = clean_tags.split(' ')
                 if shuffle_tags:
                     temp_tags = random.sample(temp_tags, len(temp_tags))
@@ -657,7 +657,7 @@ class Script(scripts.Script):
             if negative_mode == 'Negative':
                 # remove tags from p.prompt using tags from the original prompt
                 orig_list = self.original_prompt.split(',')
-                if type(p.prompt) == list:
+                if isinstance(p.prompt, list):
                     new_positive_prompts = []
                     new_negative_prompts = []
                     for pr, npp in zip(p.prompt, p.negative_prompt):
@@ -689,7 +689,7 @@ class Script(scripts.Script):
                             neg = model_hijack.get_prompt_lengths(p.negative_prompt[num])[1]
             if limit_tags < 1:
                 # remove tags from p.prompt in percentage based on limit_tags
-                if type(p.prompt) == list:
+                if isinstance(p.prompt, list):
                     for num, pr in enumerate(p.prompt):
                         clean_prompt = pr.split(',')
                         clean_prompt = clean_prompt[:int(len(clean_prompt) * limit_tags)]
@@ -701,7 +701,7 @@ class Script(scripts.Script):
                     clean_prompt = ','.join(clean_prompt)
                     p.prompt = clean_prompt
             if max_tags > 0:
-                if type(p.prompt) == list:
+                if isinstance(p.prompt, list):
                     for num, pr in enumerate(p.prompt):
                         clean_prompt = pr.split(',')
                         clean_prompt = clean_prompt[:max_tags]
@@ -742,7 +742,6 @@ class Script(scripts.Script):
 
         elif lora_enabled:
             p = self.loranado(lora_enabled, lora_folder, lora_amount, lora_min, lora_max, lora_custom_weights, p, lora_lock_prev)
-
 
     def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, crop_center, use_deepbooru, use_same_seed):
         if use_img2img and not use_ip and enabled:
@@ -795,7 +794,7 @@ class Script(scripts.Script):
     def use_autotagger(self, model):
         if model == 'deepbooru':
             orig_prompt = []
-            if type(self.original_prompt) == str:
+            if isinstance(self.original_prompt, str):
                 orig_prompt = [self.original_prompt]
             else:
                 orig_prompt = self.original_prompt

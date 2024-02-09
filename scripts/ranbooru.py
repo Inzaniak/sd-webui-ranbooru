@@ -11,7 +11,7 @@ import importlib
 from modules.processing import process_images, StableDiffusionProcessingImg2Img
 from modules import shared
 from modules.sd_hijack import model_hijack
-from modules.deepbooru import DeepDanbooru
+from modules import deepbooru
 
 extension_root = scripts.basedir()
 user_data_dir = os.path.join(extension_root, 'user')
@@ -335,15 +335,11 @@ def resize_image(img, width, height, cropping=True):
 
 
 class Script(scripts.Script):
-
-    def __init__(self):
-        self.previous_loras = ''
-        self.last_img = []
-        self.real_steps = 0
-        self.version = "1.2"
-        self.initialize_folders()
-        self.ddb = DeepDanbooru()
-        self.original_prompt = ''
+    previous_loras = ''
+    last_img = []
+    real_steps = 0
+    version = "1.2"
+    original_prompt = ''
 
     def get_files(self, path):
         files = []
@@ -529,11 +525,9 @@ class Script(scripts.Script):
                 add_tags = '&tags=-animated'
 
             # Getting Data
-            api_url = ''
             random_post = {'preview_url': ''}
             prompts = []
             last_img = []
-            data = {'post': [{'tags': ''}]}
             preview_urls = []
             api_url = booru_apis.get(booru, Gelbooru(fringe_benefits))
             print(f'Using {booru}')
@@ -792,11 +786,12 @@ class Script(scripts.Script):
 
     def use_autotagger(self, model):
         if model == 'deepbooru':
-            orig_prompt = []
             if isinstance(self.original_prompt, str):
                 orig_prompt = [self.original_prompt]
             else:
                 orig_prompt = self.original_prompt
+            deepbooru.model.start()
             for img, prompt in zip(self.last_img, orig_prompt):
-                final_prompts = [prompt + ',' + self.ddb.tag(img) for img in self.last_img]
+                final_prompts = [prompt + ',' + deepbooru.model.tag_multi(img) for img in self.last_img]
+            deepbooru.model.stop()
             return final_prompts

@@ -35,10 +35,10 @@ Here's an explanation of all the parameters:
 - **Use last image as img2img** This uses the same picture for all the img2img generations in the same batch.
 - **Crop Center**: This crops the parsed images to the center before processing. This is useful if you want to keep the width/height you set.
 - **Use Deepbooru**: This uses the Deepbooru Model to get the tags from the random image, instead of the existing ones. This is useful if you want to get more tags from the image.
-- **Use tags_search.txt**: This uses the tags from the specified file in the scripts folder. This is useful if you want to use a specific set of tags.
-- **Choose tags_search.txt**: This is the file to use with the tags_search.txt option. You can add new files in the stable-diffusion-webui\scripts\ranbooru folder.
-- **Use tags_remove.txt**: This removes the tags from the specified file in the scripts folder. This is useful if you want to remove a specific set of tags.
-- **Choose tags_remove.txt**: This is the file to use with the tags_remove.txt option. You can add new files in the stable-diffusion-webui\scripts\ranbooru folder.
+- **Use tags_search.txt**: This uses the tags from the specified file in the extensions folder. This is useful if you want to use a specific set of tags.
+- **Choose tags_search.txt**: This is the file to use with the tags_search.txt option. You can add new files in the stable-diffusion-webui\extensions\sd-webui-ranbooru\user\search folder.
+- **Use tags_remove.txt**: This removes the tags from the specified file in the extensions folder. This is useful if you want to remove a specific set of tags.
+- **Choose tags_remove.txt**: This is the file to use with the tags_remove.txt option. You can add new files in the stable-diffusion-webui\extensions\sd-webui-ranbooru\user\remove folder.
 - **Mix Prompts**: This mixes tags from different random images.
 - **Mix Amount**: This sets the number of pictures to grab random tags from.
 - **Chaos Mode**: This mixes the tags between the positive and negative prompt. If set to Less Chaos, it won't move the tags you insert in the negative prompt.

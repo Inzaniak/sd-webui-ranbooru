@@ -15,6 +15,14 @@ from modules.img2img import img2img
 from modules.sd_hijack import model_hijack
 from modules.deepbooru import DeepDanbooru
 
+extensions_root = scripts.basedir()
+user_dir = os.path.join(extensions_root, 'user')
+user_remove_dir = os.path.join(user_dir, 'remove')
+user_search_dir = os.path.join(user_dir, 'search')
+os.makedirs(user_dir, exist_ok=True)
+os.makedirs(user_remove_dir, exist_ok=True)
+os.makedirs(user_search_dir, exist_ok=True)
+
 COLORED_BG = ['black_background','aqua_background','white_background','colored_background','gray_background','blue_background','green_background','red_background','brown_background','purple_background','yellow_background','orange_background','pink_background','plain','transparent_background','simple_background','two-tone_background','grey_background']
 ADD_BG = ['outdoors','indoors']
 BW_BG = ['monochrome','greyscale','grayscale']
@@ -318,17 +326,12 @@ class Script(scripts.Script):
         self.original_prompt = ''
         
     def initialize_folders(self):
-        # if the subfolder scripts\ranbooru doesn't exist, create it
-        if not os.path.exists('scripts/ranbooru'):
-            os.makedirs('scripts/ranbooru')
-            os.makedirs('scripts/ranbooru/search')
-            os.makedirs('scripts/ranbooru/remove')
         # create two files: tags_search and tags_remove if they don't exist
-        if not os.path.exists('scripts/ranbooru/search/tags_search.txt'):
-            with open('scripts/ranbooru/search/tags_search.txt', 'w') as f:
+        if not os.path.exists(f'{user_search_dir}/tags_search.txt'):
+            with open(f'{user_search_dir}/tags_search.txt', 'w') as f:
                 f.write('')
-        if not os.path.exists('scripts/ranbooru/remove/tags_remove.txt'):
-            with open('scripts/ranbooru/remove/tags_remove.txt', 'w') as f:
+        if not os.path.exists(f'{user_remove_dir}/tags_remove.txt'):
+            with open(f'{user_remove_dir}/tags_remove.txt', 'w') as f:
                 f.write('')
                 
     def get_files(self, path):
@@ -391,9 +394,9 @@ class Script(scripts.Script):
                 with gr.Group():
                     with gr.Accordion("File", open = False):
                         use_search_txt = gr.Checkbox(label="Use tags_search.txt", value=False)
-                        choose_search_txt = gr.Dropdown(self.get_files('scripts/ranbooru/search'), label="Choose tags_search.txt", value="")
+                        choose_search_txt = gr.Dropdown(self.get_files(user_search_dir), label="Choose tags_search.txt", value="")
                         use_remove_txt = gr.Checkbox(label="Use tags_remove.txt", value=False)
-                        choose_remove_txt = gr.Dropdown(self.get_files('scripts/ranbooru/remove'), label="Choose tags_remove.txt", value="")
+                        choose_remove_txt = gr.Dropdown(self.get_files(user_remove_dir), label="Choose tags_remove.txt", value="")
                 with gr.Group():
                     with gr.Accordion("Extra", open = False):
                         with gr.Box():

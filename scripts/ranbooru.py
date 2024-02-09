@@ -15,18 +15,17 @@ from modules import deepbooru
 
 extension_root = scripts.basedir()
 user_data_dir = os.path.join(extension_root, 'user')
-search_tag_dir = os.path.join(user_data_dir, 'search')
-remove_tag_dir = os.path.join(user_data_dir, 'remove')
-os.makedirs(search_tag_dir, exist_ok=True)
-os.makedirs(remove_tag_dir, exist_ok=True)
+user_search_dir = os.path.join(user_data_dir, 'search')
+user_remove_dir = os.path.join(user_data_dir, 'remove')
+os.makedirs(user_search_dir, exist_ok=True)
+os.makedirs(user_remove_dir, exist_ok=True)
 
-if not os.path.isfile(os.path.join(search_tag_dir, 'tags_search.txt')):
-    with open(os.path.join(search_tag_dir, 'tags_search.txt'), 'w'):
+if not os.path.isfile(os.path.join(user_search_dir, 'tags_search.txt')):
+    with open(os.path.join(user_search_dir, 'tags_search.txt'), 'w'):
         pass
-if not os.path.isfile(os.path.join(remove_tag_dir, 'tags_search.txt')):
-    with open(os.path.join(remove_tag_dir, 'tags_search.txt'), 'w'):
+if not os.path.isfile(os.path.join(user_remove_dir, 'tags_search.txt')):
+    with open(os.path.join(user_remove_dir, 'tags_search.txt'), 'w'):
         pass
-
 
 COLORED_BG = ['black_background', 'aqua_background', 'white_background', 'colored_background', 'gray_background', 'blue_background', 'green_background', 'red_background', 'brown_background', 'purple_background', 'yellow_background', 'orange_background', 'pink_background', 'plain', 'transparent_background', 'simple_background', 'two-tone_background', 'grey_background']
 ADD_BG = ['outdoors', 'indoors']
@@ -402,9 +401,9 @@ class Script(scripts.Script):
                 with gr.Group():
                     with gr.Accordion("File", open=False):
                         use_search_txt = gr.Checkbox(label="Use tags_search.txt", value=False)
-                        choose_search_txt = gr.Dropdown(self.get_files(search_tag_dir), label="Choose tags_search.txt", value="")
+                        choose_search_txt = gr.Dropdown(self.get_files(user_search_dir), label="Choose tags_search.txt", value="")
                         use_remove_txt = gr.Checkbox(label="Use tags_remove.txt", value=False)
-                        choose_remove_txt = gr.Dropdown(self.get_files(remove_tag_dir), label="Choose tags_remove.txt", value="")
+                        choose_remove_txt = gr.Dropdown(self.get_files(user_remove_dir), label="Choose tags_remove.txt", value="")
                 with gr.Group():
                     with gr.Accordion("Extra", open=False):
                         with gr.Box():
@@ -492,7 +491,7 @@ class Script(scripts.Script):
             else:
                 bad_tags.append(remove_tags)
             if use_remove_txt:
-                bad_tags.extend(open(os.path.join(remove_tag_dir, choose_remove_txt), 'r').read().split(','))
+                bad_tags.extend(open(os.path.join(user_remove_dir, choose_remove_txt), 'r').read().split(','))
 
             # Manage Backgrounds
             if change_background == 'Add Background':
@@ -514,9 +513,9 @@ class Script(scripts.Script):
             add_tags = ''
             if use_search_txt:
                 if tags:
-                    tags += ',' + open(os.path.join(search_tag_dir, choose_search_txt), 'r').read()
+                    tags += ',' + open(os.path.join(user_search_dir, choose_search_txt), 'r').read()
                 else:
-                    tags = open(os.path.join(search_tag_dir, choose_search_txt), 'r').read()
+                    tags = open(os.path.join(user_search_dir, choose_search_txt), 'r').read()
             if tags != '':
                 add_tags = f'&tags=-animated+{tags.replace(",", "+")}'
                 if mature_rating != 'All':

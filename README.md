@@ -73,7 +73,7 @@ Also check my article on [CivitAI](https://civitai.com/articles/3357/ranbooru-th
 
 ## Found an issue?  
 If you found an issue with the extension, please report it in the issues section of this repository.  
-Special thanks to [TheGameratorT](https://github.com/TheGameratorT) and [SmashinFries](https://github.com/SmashinFries) for contributing.
+Special thanks to [TheGameratorT](https://github.com/TheGameratorT), [SmashinFries](https://github.com/SmashinFries), and [w-e-w](https://github.com/w-e-w) for contributing.
 
 ## Check out my other scripts
 - [Ranbooru for ComfyUI](https://github.com/Inzaniak/comfyui-ranbooru)

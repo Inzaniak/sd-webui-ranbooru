@@ -334,7 +334,24 @@ def resize_image(img, width, height, cropping=True):
         img = img.resize((width, height))
     return img
 
-
+def modify_prompt(prompt, tagged_prompt, type_deepbooru):
+                    if type_deepbooru == 'Add Before':
+                        return tagged_prompt + ',' + prompt
+                    elif type_deepbooru == 'Add After':
+                        return prompt + ',' + tagged_prompt
+                    elif type_deepbooru == 'Replace':
+                        return tagged_prompt
+                    return prompt
+                
+def remove_repeated_tags(prompt):
+    """Removes the repeated tags keeping the same order"""
+    prompt = prompt.split(',')
+    new_prompt = []
+    for tag in prompt:
+        if tag not in new_prompt:
+            new_prompt.append(tag)
+    return ','.join(new_prompt) 
+            
 class Script(scripts.Script):
     previous_loras = ''
     last_img = []
@@ -399,6 +416,7 @@ class Script(scripts.Script):
                         use_last_img = gr.Checkbox(label="Use last image as img2img", value=False)
                         crop_center = gr.Checkbox(label="Crop Center", value=False)
                         use_deepbooru = gr.Checkbox(label="Use Deepbooru", value=False)
+                        type_deepbooru = gr.Radio(["Add Before", "Add After", "Replace"], label="Deepbooru Tags Position", value="Add Before")
                 with gr.Group():
                     with gr.Accordion("File", open=False):
                         use_search_txt = gr.Checkbox(label="Use tags_search.txt", value=False)
@@ -428,7 +446,7 @@ class Script(scripts.Script):
                     lora_min = gr.Slider(value=-1.0, label="Min LoRAs Weight", minimum=-1.0, maximum=1, step=0.1)
                     lora_max = gr.Slider(value=1.0, label="Max LoRAs Weight", minimum=-1.0, maximum=1.0, step=0.1)
                     lora_custom_weights = gr.Textbox(lines=1, label="LoRAs Custom Weights")
-        return [enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, crop_center, use_deepbooru, use_same_seed, use_cache]
+        return [enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache]
 
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -466,7 +484,7 @@ class Script(scripts.Script):
                 p.prompt = f'{lora_prompt} {p.prompt}'
         return p
 
-    def before_process(self, p, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, crop_center, use_deepbooru, use_same_seed, use_cache):
+    def before_process(self, p, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache):
         if use_cache:
             if not requests_cache.patcher.is_installed():
                 requests_cache.install_cache('ranbooru_cache', backend='sqlite', expire_after=3600)
@@ -722,7 +740,14 @@ class Script(scripts.Script):
             p = self.loranado(lora_enabled, lora_folder, lora_amount, lora_min, lora_max, lora_custom_weights, p, lora_lock_prev)
             if use_deepbooru and not use_img2img:
                 self.last_img = last_img
-                p.prompt = self.use_autotagger('deepbooru')
+                tagged_prompts = self.use_autotagger('deepbooru')
+
+                if isinstance(p.prompt, list):
+                    p.prompt = [modify_prompt(pr, tagged_prompts[num], type_deepbooru) for num, pr in enumerate(p.prompt)]
+                    p.prompt = [remove_repeated_tags(pr) for pr in p.prompt]
+                else:
+                    p.prompt = modify_prompt(p.prompt, tagged_prompts, type_deepbooru)
+                    p.prompt = remove_repeated_tags(p.prompt) 
 
             if use_img2img:
                 if not use_ip:
@@ -743,7 +768,7 @@ class Script(scripts.Script):
         elif lora_enabled:
             p = self.loranado(lora_enabled, lora_folder, lora_amount, lora_min, lora_max, lora_custom_weights, p, lora_lock_prev)
 
-    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, crop_center, use_deepbooru, use_same_seed, use_cache):
+    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache):
         if use_img2img and not use_ip and enabled:
             print('Using pictures')
             if crop_center:
@@ -753,7 +778,13 @@ class Script(scripts.Script):
                 width, height = self.check_orientation(self.last_img[0])
             final_prompts = p.prompt
             if use_deepbooru:
-                final_prompts = self.use_autotagger('deepbooru')
+                tagged_prompts = self.use_autotagger('deepbooru')
+                if isinstance(p.prompt, list):
+                    final_prompts = [modify_prompt(pr, tagged_prompts[num], type_deepbooru) for num, pr in enumerate(p.prompt)]
+                    final_prompts = [remove_repeated_tags(pr) for pr in final_prompts]
+                else:
+                    final_prompts = modify_prompt(p.prompt, tagged_prompts, type_deepbooru)
+                    final_prompts = remove_repeated_tags(final_prompts)
             p = StableDiffusionProcessingImg2Img(
                 sd_model=shared.sd_model,
                 outpath_samples=shared.opts.outdir_samples or shared.opts.outdir_img2img_samples,

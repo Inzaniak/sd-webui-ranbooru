@@ -7,6 +7,7 @@ import os
 from PIL import Image
 import numpy as np
 import importlib
+import requests_cache
 
 from modules import images
 from modules.processing import process_images, StableDiffusionProcessingImg2Img
@@ -14,6 +15,7 @@ from modules import shared
 from modules.img2img import img2img
 from modules.sd_hijack import model_hijack
 from modules.deepbooru import DeepDanbooru
+from modules.ui_components import InputAccordion
 
 extensions_root = scripts.basedir()
 user_dir = os.path.join(extensions_root, 'user')
@@ -358,8 +360,7 @@ class Script(scripts.Script):
     
     def ui(self, is_img2img):
         with gr.Group():
-            with gr.Accordion("Ranbooru", open = False):
-                enabled = gr.Checkbox(label="Enable")
+            with InputAccordion(False, label="Ranbooru", elem_id=self.elem_id("ra_enable")) as enabled:
                 booru = gr.Dropdown(["gelbooru","rule34","safebooru","danbooru","konachan",'yande.re','aibooru','xbooru','e621'], label="Booru", value="gelbooru")
                 max_pages = gr.Slider(label="Max Pages", minimum=1, maximum=100,value=100, step=1)
                 gr.Markdown("""## Post""")
@@ -408,10 +409,11 @@ class Script(scripts.Script):
                         with gr.Box():
                             negative_mode = gr.Radio(["None","Negative"], label="Negative Mode", value="None")
                             use_same_seed = gr.Checkbox(label="Use same seed for all pictures", value=False)
+                        with gr.Box():
+                            use_cache = gr.Checkbox(label="Use cache", value=True)
         with gr.Group():
-            with gr.Accordion("LoRAnado", open = False):
+            with InputAccordion(False, label="LoRAnado", elem_id=self.elem_id("lo_enable")) as lora_enabled:
                 with gr.Box():
-                    lora_enabled = gr.Checkbox(label="Use LoRAnado", value=False)
                     lora_lock_prev = gr.Checkbox(label="Lock previous LoRAs", value=False)
                     lora_folder = gr.Textbox(lines=1, label="LoRAs Subfolder")
                     lora_amount = gr.Slider(default=1, label="LoRAs Amount", minimum=1, maximum=10, step=1)
@@ -419,7 +421,7 @@ class Script(scripts.Script):
                     lora_min = gr.Slider(value=-1.0, label="Min LoRAs Weight", minimum=-1.0, maximum=1, step=0.1)
                     lora_max = gr.Slider(value=1.0, label="Max LoRAs Weight", minimum=-1.0, maximum=1.0, step=0.1)
                     lora_custom_weights = gr.Textbox(lines=1, label="LoRAs Custom Weights")
-        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center, use_deepbooru, use_same_seed]
+        return [enabled,tags,booru,remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center, use_deepbooru, use_same_seed,use_cache]
                     
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -457,7 +459,13 @@ class Script(scripts.Script):
                 p.prompt = f'{lora_prompt} {p.prompt}'
         return p
 
-    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center,use_deepbooru,use_same_seed):
+    def before_process(self, p, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center,use_deepbooru,use_same_seed,use_cache):
+        if use_cache:
+            if not requests_cache.patcher.is_installed():
+                requests_cache.install_cache('ranbooru_cache', backend='sqlite', expire_after=3600)
+        else:
+            if requests_cache.patcher.is_installed():
+                requests_cache.uninstall_cache()
         if enabled:
             # Initialize APIs
             booru_apis = {
@@ -733,7 +741,7 @@ class Script(scripts.Script):
         else:
             pass
         
-    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center,use_deepbooru,use_same_seed):
+    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags,max_pages,change_dash,same_prompt,fringe_benefits,remove_tags,use_img2img,denoising,use_last_img,change_background,change_color,shuffle_tags,post_id,mix_prompt,mix_amount,chaos_mode,negative_mode,chaos_amount,limit_tags,max_tags,sorting_order,mature_rating,lora_folder,lora_amount,lora_min,lora_max,lora_enabled,lora_custom_weights,lora_lock_prev,use_ip,use_search_txt,use_remove_txt,choose_search_txt,choose_remove_txt,crop_center,use_deepbooru,use_same_seed,use_cache):
         if use_img2img and not use_ip and enabled:
             print('Using pictures')
             if crop_center:

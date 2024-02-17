@@ -282,6 +282,17 @@ class e621(Booru):
 
 
 def generate_chaos(pos_tags, neg_tags, chaos_amount):
+    """Generates chaos in the prompt by adding random tags from the prompt to the positive and negative prompts
+    
+    Args:
+        pos_tags (str): the positive prompt
+        neg_tags (str): the negative prompt
+        chaos_amount (float): the percentage of tags to put in the positive prompt
+        
+    Returns:
+        str: the positive prompt
+        str: the negative prompt
+    """
     # create a list with the tags in the prompt and in the negative prompt
     chaos_list = [tag for tag in pos_tags.split(',') + neg_tags.split(',') if tag.strip() != '']
     # distinct the list
@@ -298,7 +309,17 @@ def generate_chaos(pos_tags, neg_tags, chaos_amount):
 
 
 def resize_image(img, width, height, cropping=True):
-    """Resize image to specified width and height"""
+    """Resize image to specified width and height
+    
+    Args:
+        img (PIL.Image): the image
+        width (int): the width in pixels
+        height (int): the height in pixels
+        cropping (bool): whether to crop the image or not
+        
+    Returns:
+        PIL.Image: the resized image
+    """
     if cropping:
         # resize the picture and center crop it
         # example: you have a 100x200 picture and width=300 and height=300
@@ -335,22 +356,57 @@ def resize_image(img, width, height, cropping=True):
     return img
 
 def modify_prompt(prompt, tagged_prompt, type_deepbooru):
-                    if type_deepbooru == 'Add Before':
-                        return tagged_prompt + ',' + prompt
-                    elif type_deepbooru == 'Add After':
-                        return prompt + ',' + tagged_prompt
-                    elif type_deepbooru == 'Replace':
-                        return tagged_prompt
-                    return prompt
+    """Modifies the prompt based on the type_deepbooru selected
+    
+    Args:
+        prompt (str): the prompt
+        tagged_prompt (str): the prompt tagged by deepbooru
+        type_deepbooru (str): the type of modification
+        
+    Returns:
+        str: the modified prompt
+    """
+    if type_deepbooru == 'Add Before':
+        return tagged_prompt + ',' + prompt
+    elif type_deepbooru == 'Add After':
+        return prompt + ',' + tagged_prompt
+    elif type_deepbooru == 'Replace':
+        return tagged_prompt
+    return prompt
                 
 def remove_repeated_tags(prompt):
-    """Removes the repeated tags keeping the same order"""
+    """Removes the repeated tags keeping the same order
+    
+    Args:
+        prompt (str): the prompt
+        
+    Returns:
+        str: the prompt without repeated tags    
+    """
     prompt = prompt.split(',')
     new_prompt = []
     for tag in prompt:
         if tag not in new_prompt:
             new_prompt.append(tag)
     return ','.join(new_prompt) 
+
+def limit_prompt_tags(prompt, limit_tags, mode):
+    """Limits the amount of tags in the prompt. It can be done by percentage or by a fixed amount.
+
+    Args:
+        prompt (str): the prompt
+        limit_tags (float): the percentage of tags to keep
+        mode (str): 'Limit' or 'Max'
+        
+    Returns:
+        str: the prompt with the limited amount of tags
+    """
+    clean_prompt = prompt.split(',')
+    if mode == 'Limit':
+        clean_prompt = clean_prompt[:int(len(clean_prompt) * limit_tags)]
+    elif mode == 'Max':
+        clean_prompt = clean_prompt[:limit_tags]
+    return ','.join(clean_prompt)
             
 class Script(scripts.Script):
     previous_loras = ''
@@ -485,12 +541,11 @@ class Script(scripts.Script):
         return p
 
     def before_process(self, p, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache):
-        if use_cache:
-            if not requests_cache.patcher.is_installed():
-                requests_cache.install_cache('ranbooru_cache', backend='sqlite', expire_after=3600)
-        else:
-            if requests_cache.patcher.is_installed():
-                requests_cache.uninstall_cache()
+        # Manage Cache
+        if use_cache and not requests_cache.patcher.is_installed():
+            requests_cache.install_cache('ranbooru_cache', backend='sqlite', expire_after=3600)
+        elif not use_cache and requests_cache.patcher.is_installed():
+            requests_cache.uninstall_cache()
         if enabled:
             # Initialize APIs
             booru_apis = {
@@ -512,42 +567,50 @@ class Script(scripts.Script):
             bad_tags = []
             if remove_bad_tags:
                 bad_tags = ['mixed-language_text', 'watermark', 'text', 'english_text', 'speech_bubble', 'signature', 'artist_name', 'censored', 'bar_censor', 'translation', 'twitter_username', "twitter_logo", 'patreon_username', 'commentary_request', 'tagme', 'commentary', 'character_name', 'mosaic_censoring', 'instagram_username', 'text_focus', 'english_commentary', 'comic', 'translation_request', 'fake_text', 'translated', 'paid_reward_available', 'thought_bubble', 'multiple_views', 'silent_comic', 'out-of-frame_censoring', 'symbol-only_commentary', '3koma', '2koma', 'character_watermark', 'spoken_question_mark', 'japanese_text', 'spanish_text', 'language_text', 'fanbox_username', 'commission', 'original', 'ai_generated', 'stable_diffusion', 'tagme_(artist)', 'text_bubble', 'qr_code', 'chinese_commentary', 'korean_text', 'partial_commentary', 'chinese_text', 'copyright_request', 'heart_censor', 'censored_nipples', 'page_number', 'scan', 'fake_magazine_cover', 'korean_commentary']
+
             if ',' in remove_tags:
                 bad_tags.extend(remove_tags.split(','))
             else:
                 bad_tags.append(remove_tags)
+
             if use_remove_txt:
                 bad_tags.extend(open(os.path.join(user_remove_dir, choose_remove_txt), 'r').read().split(','))
 
             # Manage Backgrounds
-            if change_background == 'Add Background':
-                bad_tags.extend(COLORED_BG)
-                p.prompt = (p.prompt + ',' if p.prompt else '') + f'detailed_background,{random.choice(["outdoors", "indoors"])}'
-            elif change_background == 'Remove Background':
-                bad_tags.extend(ADD_BG)
-                p.prompt = (p.prompt + ',' if p.prompt else '') + 'plain_background,simple_background,' + random.choice(COLORED_BG)
-            elif change_background == 'Remove All':
-                bad_tags.extend(COLORED_BG)
-                bad_tags.extend(ADD_BG)
-            if change_color == 'Colored':
-                bad_tags.extend(BW_BG)
-            elif change_color == 'Limited Palette':
-                p.prompt = (p.prompt + ',' if p.prompt else '') + '(limited_palette:1.3)'
-            elif change_color == 'Monochrome':
-                p.prompt = (p.prompt + ',' if p.prompt else '') + ','.join(BW_BG)
+            background_options = {
+                'Add Background': ('detailed_background,' + random.choice(["outdoors", "indoors"]), COLORED_BG),
+                'Remove Background': ('plain_background,simple_background,' + random.choice(COLORED_BG), ADD_BG),
+                'Remove All': ('', COLORED_BG + ADD_BG)
+            }
 
-            add_tags = ''
-            if use_search_txt:
-                if tags:
-                    tags += ',' + open(os.path.join(user_search_dir, choose_search_txt), 'r').read()
+            if change_background in background_options:
+                prompt_addition, tags_to_remove = background_options[change_background]
+                bad_tags.extend(tags_to_remove)
+                p.prompt = f'{p.prompt},{prompt_addition}' if p.prompt else prompt_addition
+
+            # Manage Colors
+            color_options = {
+                'Colored': BW_BG,
+                'Limited Palette': '(limited_palette:1.3)',
+                'Monochrome': ','.join(BW_BG)
+            }
+
+            if change_color in color_options:
+                color_option = color_options[change_color]
+                if isinstance(color_option, list):
+                    bad_tags.extend(color_option)
                 else:
-                    tags = open(os.path.join(user_search_dir, choose_search_txt), 'r').read()
-            if tags != '':
-                add_tags = f'&tags=-animated+{tags.replace(",", "+")}'
+                    p.prompt = f'{p.prompt},{color_option}' if p.prompt else color_option
+
+            if use_search_txt:
+                search_tags = open(os.path.join(user_search_dir, choose_search_txt), 'r').read()
+                tags = f'{tags},{search_tags}' if tags else search_tags
+
+            add_tags = '&tags=-animated'
+            if tags:
+                add_tags += f'+{tags.replace(",", "+")}'
                 if mature_rating != 'All':
                     add_tags += f'+rating:{RATINGS[booru][mature_rating]}'
-            else:
-                add_tags = '&tags=-animated'
 
             # Getting Data
             random_post = {'preview_url': ''}
@@ -564,10 +627,9 @@ class Script(scripts.Script):
                 data = api_url.get_data(add_tags, max_pages)
 
             print(api_url.booru_url)
-            # Replace null scores with 0
+            # Replace null scores with 0s
             for post in data['post']:
-                if post['score'] is None:
-                    post['score'] = 0
+                post['score'] = post.get('score', 0)
             # Sort based on sorting_order
             if sorting_order == 'High Score':
                 data['post'] = sorted(data['post'], key=lambda k: k.get('score', 0), reverse=True)
@@ -592,8 +654,7 @@ class Script(scripts.Script):
                         # distinct temp_tags
                         temp_tags = list(set(temp_tags))
                         random_post = data['post'][random_number]
-                        if len(temp_tags) < max_tags:
-                            max_tags = max(len(temp_tags), 20)
+                        max_tags = min(max(len(temp_tags), 20), max_tags)
                         random_post['tags'] = ' '.join(random.sample(temp_tags, max_tags))
                     else:
                         try:
@@ -602,49 +663,38 @@ class Script(scripts.Script):
                             raise Exception(
                                 "No posts found with those tags. Try lowering the pages or changing the tags.")
                 clean_tags = random_post['tags'].replace('(', r'\(').replace(')', r'\)')
-                temp_tags = clean_tags.split(' ')
-                if shuffle_tags:
-                    temp_tags = random.sample(temp_tags, len(temp_tags))
+                temp_tags = random.sample(clean_tags.split(' '), len(clean_tags.split(' '))) if shuffle_tags else clean_tags.split(' ')
                 prompts.append(','.join(temp_tags))
-                try:
-                    preview_urls.append(random_post['file_url'])
-                except KeyError:
-                    print('No file_url found, using random pic')
-                    preview_urls.append('https://pic.re/image')
+                preview_urls.append(random_post.get('file_url', 'https://pic.re/image'))
                 # Debug picture
                 if DEBUG:
                     print(random_post)
+            # Get Images
             if use_img2img or use_deepbooru:
-                if use_last_img:
-                    response = requests.get(random_post['file_url'], headers=api_url.headers)
-                    last_img = [Image.open(BytesIO(response.content))]
-                else:
-                    for img in preview_urls:
-                        response = requests.get(img, headers=api_url.headers)
-                        last_img.append(Image.open(BytesIO(response.content)))
+                image_urls = [random_post['file_url']] if use_last_img else preview_urls
+
+                for img in image_urls:
+                    response = requests.get(img, headers=api_url.headers)
+                    last_img.append(Image.open(BytesIO(response.content)))
             new_prompts = []
+            # Cleaning Tags
             for prompt in prompts:
-                new_prompt = ','.join([tag for tag in prompt.split(',') if tag.strip() not in bad_tags])
-                # loop over bad_tags containing * and remove from new_prompt every tag that contains the string
+                prompt_tags = [tag for tag in prompt.split(',') if tag.strip() not in bad_tags]
                 for bad_tag in bad_tags:
                     if '*' in bad_tag:
-                        new_prompt = ','.join(
-                            [tag for tag in new_prompt.split(',') if bad_tag.replace('*', '') not in tag])
+                        prompt_tags = [tag for tag in prompt_tags if bad_tag.replace('*', '') not in tag]
+                new_prompt = ','.join(prompt_tags)
                 if change_dash:
                     new_prompt = new_prompt.replace("_", " ")
                 new_prompts.append(new_prompt)
             prompts = new_prompts
             if len(prompts) == 1:
                 print('Processing Single Prompt')
-                if p.prompt == '':
-                    p.prompt = prompts[-1]
-                else:
-                    p.prompt = f"{p.prompt},{prompts[-1]}"
-                if chaos_mode == 'Chaos':
-                    p.prompt, p.negative_prompt = generate_chaos(p.prompt, p.negative_prompt, chaos_amount)
-                elif chaos_mode == 'Less Chaos':
-                    p.prompt, negative_prompt = generate_chaos(p.prompt, '', chaos_amount)
-                    p.negative_prompt = p.negative_prompt + ',' + negative_prompt
+                p.prompt = f"{p.prompt},{prompts[-1]}" if p.prompt else prompts[-1]
+                if chaos_mode in ['Chaos', 'Less Chaos']:
+                    negative_prompt = '' if chaos_mode == 'Less Chaos' else p.negative_prompt
+                    p.prompt, negative_prompt = generate_chaos(p.prompt, negative_prompt, chaos_amount)
+                    p.negative_prompt = f"{p.negative_prompt},{negative_prompt}" if p.negative_prompt else negative_prompt
             else:
                 print('Processing Multiple Prompts')
                 negative_prompts = []
@@ -665,10 +715,7 @@ class Script(scripts.Script):
                     p.negative_prompt = [p.negative_prompt + ',' + negative_prompt for negative_prompt in negative_prompts]
                 else:
                     p.negative_prompt = [p.negative_prompt for _ in range(0, p.batch_size * p.n_iter)]
-                if p.prompt == '':
-                    p.prompt = prompts
-                else:
-                    p.prompt = [f"{p.prompt},{prompt}" for prompt in prompts]
+                p.prompt = prompts if not p.prompt else [f"{p.prompt},{prompt}" for prompt in prompts]
                 if use_img2img:
                     if len(last_img) < p.batch_size * p.n_iter:
                         last_img = [last_img[0] for _ in range(0, p.batch_size * p.n_iter)]
@@ -705,36 +752,22 @@ class Script(scripts.Script):
                             p.negative_prompt[num] += random.choice(p.negative_prompt[num].split(','))
                             # p.negative_prompt[num] += '_'
                             neg = model_hijack.get_prompt_lengths(p.negative_prompt[num])[1]
+            
             if limit_tags < 1:
-                # remove tags from p.prompt in percentage based on limit_tags
                 if isinstance(p.prompt, list):
-                    for num, pr in enumerate(p.prompt):
-                        clean_prompt = pr.split(',')
-                        clean_prompt = clean_prompt[:int(len(clean_prompt) * limit_tags)]
-                        clean_prompt = ','.join(clean_prompt)
-                        p.prompt[num] = clean_prompt
+                    p.prompt = [limit_prompt_tags(pr, limit_tags, 'Limit') for pr in p.prompt]
                 else:
-                    clean_prompt = p.prompt.split(',')
-                    clean_prompt = clean_prompt[:int(len(clean_prompt) * limit_tags)]
-                    clean_prompt = ','.join(clean_prompt)
-                    p.prompt = clean_prompt
+                    p.prompt = limit_prompt_tags(p.prompt, limit_tags, 'Limit')
+                    
             if max_tags > 0:
                 if isinstance(p.prompt, list):
-                    for num, pr in enumerate(p.prompt):
-                        clean_prompt = pr.split(',')
-                        clean_prompt = clean_prompt[:max_tags]
-                        clean_prompt = ','.join(clean_prompt)
-                        p.prompt[num] = clean_prompt
+                    p.prompt = [limit_prompt_tags(pr, max_tags, 'Max') for pr in p.prompt]
                 else:
-                    clean_prompt = p.prompt.split(',')
-                    clean_prompt = clean_prompt[:max_tags]
-                    clean_prompt = ','.join(clean_prompt)
-                    p.prompt = clean_prompt
+                    p.prompt = limit_prompt_tags(p.prompt, max_tags, 'Max')
 
             if use_same_seed:
-                if p.seed == -1:
-                    p.seed = random.randint(0, 2 ** 32 - 1)
-                p.seed = [p.seed for _ in range(0, p.batch_size)]
+                p.seed = random.randint(0, 2 ** 32 - 1) if p.seed == -1 else p.seed
+                p.seed = [p.seed] * p.batch_size
 
             # LORANADO
             p = self.loranado(lora_enabled, lora_folder, lora_amount, lora_min, lora_max, lora_custom_weights, p, lora_lock_prev)
@@ -813,7 +846,15 @@ class Script(scripts.Script):
                     processed.infotexts.append(proc.infotexts[num + 1])
 
     def random_number(self, sorting_order, size):
-        # create weights so that the first element is more likely to be chosen than the next one
+        """Generates random numbers based on the sorting_order
+        
+        Args:
+            sorting_order (str): the sorting order. It can be 'Random', 'High Score' or 'Low Score'
+            size (int): the amount of random numbers to generate
+            
+        Returns:
+            list: the random numbers
+        """
         weights = np.arange(POST_AMOUNT, 0, -1)
         weights = weights / weights.sum()
         if sorting_order in ('High Score', 'Low Score'):
@@ -823,6 +864,14 @@ class Script(scripts.Script):
         return random_numbers
 
     def use_autotagger(self, model):
+        """Use the autotagger to tag the images
+        
+        Args:
+            model (str): the model to use. Right now only 'deepbooru' is supported
+            
+        Returns:
+            list: the tagged prompts
+        """
         if model == 'deepbooru':
             if isinstance(self.original_prompt, str):
                 orig_prompt = [self.original_prompt]

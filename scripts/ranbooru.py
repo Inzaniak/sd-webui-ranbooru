@@ -25,8 +25,8 @@ os.makedirs(user_remove_dir, exist_ok=True)
 if not os.path.isfile(os.path.join(user_search_dir, 'tags_search.txt')):
     with open(os.path.join(user_search_dir, 'tags_search.txt'), 'w'):
         pass
-if not os.path.isfile(os.path.join(user_remove_dir, 'tags_search.txt')):
-    with open(os.path.join(user_remove_dir, 'tags_search.txt'), 'w'):
+if not os.path.isfile(os.path.join(user_remove_dir, 'tags_remove.txt')):
+    with open(os.path.join(user_remove_dir, 'tags_remove.txt'), 'w'):
         pass
 
 COLORED_BG = ['black_background', 'aqua_background', 'white_background', 'colored_background', 'gray_background', 'blue_background', 'green_background', 'red_background', 'brown_background', 'purple_background', 'yellow_background', 'orange_background', 'pink_background', 'plain', 'transparent_background', 'simple_background', 'two-tone_background', 'grey_background']

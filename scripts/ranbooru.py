@@ -430,12 +430,15 @@ class Script(scripts.Script):
             obj.interactive = True
 
     def title(self):
-
         return "Ranbooru"
 
     def show(self, is_img2img):
-
         return scripts.AlwaysVisible
+    
+    def refresh_ser(self):
+        return gr.update(choices=self.get_files(user_search_dir))
+    def refresh_rem(self):
+        return gr.update(choices=self.get_files(user_remove_dir))
 
     def ui(self, is_img2img):
         with gr.Group():
@@ -475,10 +478,12 @@ class Script(scripts.Script):
                         type_deepbooru = gr.Radio(["Add Before", "Add After", "Replace"], label="Deepbooru Tags Position", value="Add Before")
                 with gr.Group():
                     with gr.Accordion("File", open=False):
-                        use_search_txt = gr.Checkbox(label="Use tags_search.txt", value=False)
+                        use_search_txt = gr.Checkbox(label="Use tags_search.txt", value=False)  
                         choose_search_txt = gr.Dropdown(self.get_files(user_search_dir), label="Choose tags_search.txt", value="")
+                        search_refresh_btn = gr.Button("Refresh")
                         use_remove_txt = gr.Checkbox(label="Use tags_remove.txt", value=False)
                         choose_remove_txt = gr.Dropdown(self.get_files(user_remove_dir), label="Choose tags_remove.txt", value="")
+                        remove_refresh_btn = gr.Button("Refresh")
                 with gr.Group():
                     with gr.Accordion("Extra", open=False):
                         with gr.Box():
@@ -502,7 +507,20 @@ class Script(scripts.Script):
                     lora_min = gr.Slider(value=-1.0, label="Min LoRAs Weight", minimum=-1.0, maximum=1, step=0.1)
                     lora_max = gr.Slider(value=1.0, label="Max LoRAs Weight", minimum=-1.0, maximum=1.0, step=0.1)
                     lora_custom_weights = gr.Textbox(lines=1, label="LoRAs Custom Weights")
-        return [enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache]
+        
+        search_refresh_btn.click(
+            fn=self.refresh_ser,
+            inputs=[],
+            outputs=[choose_search_txt]
+        )
+
+        remove_refresh_btn.click(
+            fn=self.refresh_rem,
+            inputs=[],
+            outputs=[choose_remove_txt]
+        )
+
+        return [enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache]
 
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -604,7 +622,12 @@ class Script(scripts.Script):
 
             if use_search_txt:
                 search_tags = open(os.path.join(user_search_dir, choose_search_txt), 'r').read()
-                tags = f'{tags},{search_tags}' if tags else search_tags
+                search_tags_r = search_tags.replace(" ", "")
+                split_tags = search_tags_r.splitlines()
+                filtered_tags = [line for line in split_tags if line.strip()]
+                rand_selected = random.randint(0, len(filtered_tags) - 1)
+                selected_tags = filtered_tags[rand_selected]
+                tags = f'{tags},{selected_tags}' if tags else selected_tags
 
             add_tags = '&tags=-animated'
             if tags:

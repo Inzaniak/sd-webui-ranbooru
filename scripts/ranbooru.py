@@ -113,17 +113,29 @@ class Gelbooru(Booru):
 
     def get_data(self, add_tags, max_pages=10, id=''):
         global COUNT
-        if id:
-            add_tags = ''
-        self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
-        # The randint function is an alias to randrange(a, b+1), so 'max_pages' should be passed as 'max_pages-1' 
-        if self.fringeBenefits:
-            res = requests.get(self.booru_url, cookies={'fringeBenefits': 'yup'})
-        else:
-            res = requests.get(self.booru_url)
-        data = res.json()
-        COUNT = data['@attributes']['count']
-        print(f" Processing {COUNT} results.")
+        loop_msg = True # avoid showing same msg twice
+        for loop in range(2): # run loop at most twice
+            if id:
+                add_tags = ''
+            self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
+            # The randint function is an alias to randrange(a, b+1), so 'max_pages' should be passed as 'max_pages-1' 
+            if self.fringeBenefits:
+                res = requests.get(self.booru_url, cookies={'fringeBenefits': 'yup'})
+            else:
+                res = requests.get(self.booru_url)
+            data = res.json()
+            COUNT = data['@attributes']['count']
+            if COUNT <= max_pages*POST_AMOUNT:
+                max_pages = COUNT // POST_AMOUNT+1
+                # If max_pages is bigger than available pages, loop the function with updated max_pages based on the value of COUNT
+                while loop_msg:
+                    print(f" Processing {COUNT} results.")
+                    loop_msg = False
+                    # avoid showing same msg twice
+                continue
+            else:
+                print(f" Processing {max_pages*POST_AMOUNT} out of {COUNT} results.")
+            break
         return data
 
     def get_post(self, add_tags, max_pages=10, id=''):
@@ -137,17 +149,29 @@ class XBooru(Booru):
 
     def get_data(self, add_tags, max_pages=10, id=''):
         global COUNT
-        if id:
-            add_tags = ''
-        self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
-        print(self.booru_url)
-        res = requests.get(self.booru_url)
-        data = res.json()
-        COUNT = 0
-        for post in data:
-            post['file_url'] = f"https://xbooru.com/images/{post['directory']}/{post['image']}"
-            COUNT += 1
-        print(f" Processing {COUNT} results.")
+        loop_msg = True # avoid showing same msg twice
+        for loop in range(2): # run loop at most twice
+            if id:
+                add_tags = ''
+            self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
+            print(self.booru_url)
+            res = requests.get(self.booru_url)
+            data = res.json()
+            COUNT = 0
+            for post in data:
+                post['file_url'] = f"https://xbooru.com/images/{post['directory']}/{post['image']}"
+                COUNT += 1
+            if COUNT <= max_pages*POST_AMOUNT:
+                max_pages = COUNT // POST_AMOUNT+1
+                # If max_pages is bigger than available pages, loop the function with updated max_pages based on the value of COUNT
+                while loop_msg:
+                    print(f" Processing {COUNT} results.")
+                    loop_msg = False
+                    # avoid showing same msg twice
+                continue
+            else:
+                print(f" Processing {max_pages*POST_AMOUNT} out of {COUNT} results.")
+            break
         return {'post': data}
 
     def get_post(self, add_tags, max_pages=10, id=''):
@@ -161,13 +185,25 @@ class Rule34(Booru):
 
     def get_data(self, add_tags, max_pages=10, id=''):
         global COUNT
-        if id:
-            add_tags = ''
-        self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
-        res = requests.get(self.booru_url)
-        data = res.json()
-        COUNT = len(data)
-        print(f" Processing {COUNT} results.")
+        loop_msg = True # avoid showing same msg twice
+        for loop in range(2): # run loop at most twice
+            if id:
+                add_tags = ''
+            self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
+            res = requests.get(self.booru_url)
+            data = res.json()
+            COUNT = len(data)
+            if COUNT <= max_pages*POST_AMOUNT:
+                max_pages = COUNT // POST_AMOUNT+1
+                # If max_pages is bigger than available pages, loop the function with updated max_pages based on the value of COUNT
+                while loop_msg:
+                    print(f" Processing {COUNT} results.")
+                    loop_msg = False
+                    # avoid showing same msg twice
+                continue
+            else:
+                print(f" Processing {max_pages*POST_AMOUNT} out of {COUNT} results.")
+            break
         return {'post': data}
 
     def get_post(self, add_tags, max_pages=10, id=''):
@@ -181,16 +217,28 @@ class Safebooru(Booru):
 
     def get_data(self, add_tags, max_pages=10, id=''):
         global COUNT
-        if id:
-            add_tags = ''
-        self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
-        res = requests.get(self.booru_url)
-        data = res.json()
-        COUNT = 0
-        for post in data:
-            post['file_url'] = f"https://safebooru.org/images/{post['directory']}/{post['image']}"
-            COUNT += 1
-        print(f" Processing {COUNT} results.")
+        loop_msg = True # avoid showing same msg twice
+        for loop in range(2): # run loop at most twice
+            if id:
+                add_tags = ''
+            self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
+            res = requests.get(self.booru_url)
+            data = res.json()
+            COUNT = 0
+            for post in data:
+                post['file_url'] = f"https://safebooru.org/images/{post['directory']}/{post['image']}"
+                COUNT += 1
+            if COUNT <= max_pages*POST_AMOUNT:
+                max_pages = COUNT // POST_AMOUNT+1
+                # If max_pages is bigger than available pages, loop the function with updated max_pages based on the value of COUNT
+                while loop_msg:
+                    print(f" Processing {COUNT} results.")
+                    loop_msg = False
+                    # avoid showing same msg twice
+                continue
+            else:
+                print(f" Processing {max_pages*POST_AMOUNT} out of {COUNT} results.")
+            break
         return {'post': data}
 
     def get_post(self, add_tags, max_pages=10, id=''):
@@ -204,13 +252,25 @@ class Konachan(Booru):
 
     def get_data(self, add_tags, max_pages=10, id=''):
         global COUNT
-        if id:
-            add_tags = ''
-        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
-        res = requests.get(self.booru_url)
-        data = res.json()
-        COUNT = len(data)
-        print(f" Processing {COUNT} results.")
+        loop_msg = True # avoid showing same msg twice
+        for loop in range(2): # run loop at most twice
+            if id:
+                add_tags = ''
+            self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
+            res = requests.get(self.booru_url)
+            data = res.json()
+            COUNT = len(data)
+            if COUNT <= max_pages*POST_AMOUNT:
+                max_pages = COUNT // POST_AMOUNT+1
+                # If max_pages is bigger than available pages, loop the function with updated max_pages based on the value of COUNT
+                while loop_msg:
+                    print(f" Processing {COUNT} results.")
+                    loop_msg = False
+                    # avoid showing same msg twice
+                continue
+            else:
+                print(f" Processing {max_pages*POST_AMOUNT} out of {COUNT} results.")
+            break
         return {'post': data}
 
     def get_post(self, add_tags, max_pages=10, id=''):
@@ -224,13 +284,25 @@ class Yandere(Booru):
 
     def get_data(self, add_tags, max_pages=10, id=''):
         global COUNT
-        if id:
-            add_tags = ''
-        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
-        res = requests.get(self.booru_url)
-        data = res.json()
-        COUNT = len(data)
-        print(f" Processing {COUNT} results.")
+        loop_msg = True # avoid showing same msg twice
+        for loop in range(2): # run loop at most twice
+            if id:
+                add_tags = ''
+            self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
+            res = requests.get(self.booru_url)
+            data = res.json()
+            COUNT = len(data)
+            if COUNT <= max_pages*POST_AMOUNT:
+                max_pages = COUNT // POST_AMOUNT+1
+                # If max_pages is bigger than available pages, loop the function with updated max_pages based on the value of COUNT
+                while loop_msg:
+                    print(f" Processing {COUNT} results.")
+                    loop_msg = False
+                    # avoid showing same msg twice
+                continue
+            else:
+                print(f" Processing {max_pages*POST_AMOUNT} out of {COUNT} results.")
+            break
         return {'post': data}
 
     def get_post(self, add_tags, max_pages=10, id=''):
@@ -244,15 +316,27 @@ class AIBooru(Booru):
 
     def get_data(self, add_tags, max_pages=10, id=''):
         global COUNT
-        if id:
-            add_tags = ''
-        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
-        res = requests.get(self.booru_url)
-        data = res.json()
-        COUNT = len(data)
-        print(f" Processing {COUNT} results.")
-        for post in data:
-            post['tags'] = post['tag_string']
+        loop_msg = True # avoid showing same msg twice
+        for loop in range(2): # run loop at most twice
+            if id:
+                add_tags = ''
+            self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
+            res = requests.get(self.booru_url)
+            data = res.json()
+            COUNT = len(data)
+            for post in data:
+                post['tags'] = post['tag_string']
+            if COUNT <= max_pages*POST_AMOUNT:
+                max_pages = COUNT // POST_AMOUNT+1
+                # If max_pages is bigger than available pages, loop the function with updated max_pages based on the value of COUNT
+                while loop_msg:
+                    print(f" Processing {COUNT} results.")
+                    loop_msg = False
+                    # avoid showing same msg twice
+                continue
+            else:
+                print(f" Processing {max_pages*POST_AMOUNT} out of {COUNT} results.")
+            break
         return {'post': data}
 
     def get_post(self, add_tags, max_pages=10, id=''):
@@ -266,15 +350,27 @@ class Danbooru(Booru):
 
     def get_data(self, add_tags, max_pages=10, id=''):
         global COUNT
-        if id:
-            add_tags = ''
-        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
-        res = requests.get(self.booru_url, headers=self.headers)
-        data = res.json()
-        COUNT = len(data)
-        print(f" Processing {COUNT} results.")
-        for post in data:
-            post['tags'] = post['tag_string']
+        loop_msg = True # avoid showing same msg twice
+        for loop in range(2): # run loop at most twice
+            if id:
+                add_tags = ''
+            self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
+            res = requests.get(self.booru_url, headers=self.headers)
+            data = res.json()
+            COUNT = len(data)
+            for post in data:
+                post['tags'] = post['tag_string']
+            if COUNT <= max_pages*POST_AMOUNT:
+                max_pages = COUNT // POST_AMOUNT+1
+                # If max_pages is bigger than available pages, loop the function with updated max_pages based on the value of COUNT
+                while loop_msg:
+                    print(f" Processing {COUNT} results.")
+                    loop_msg = False
+                    # avoid showing same msg twice
+                continue
+            else:
+                print(f" Processing {max_pages*POST_AMOUNT} out of {COUNT} results.")
+            break
         return {'post': data}
 
     def get_post(self, add_tags, max_pages=10, id=''):
@@ -293,20 +389,32 @@ class e621(Booru):
 
     def get_data(self, add_tags, max_pages=10, id=''):
         global COUNT
-        if id:
-            add_tags = ''
-        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
-        res = requests.get(self.booru_url, headers=self.headers)
-        data = res.json()['posts']
-        COUNT = len(data)
-        print(f" Processing {COUNT} results.")
-        for post in data:
-            temp_tags = []
-            sublevels = ['general', 'artist', 'copyright', 'character', 'species']
-            for sublevel in sublevels:
-                temp_tags.extend(post['tags'][sublevel])
-            post['tags'] = ' '.join(temp_tags)
-            post['score'] = post['score']['total']
+        loop_msg = True # avoid showing same msg twice
+        for loop in range(2): # run loop at most twice
+            if id:
+                add_tags = ''
+            self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
+            res = requests.get(self.booru_url, headers=self.headers)
+            data = res.json()['posts']
+            COUNT = len(data)
+            for post in data:
+                temp_tags = []
+                sublevels = ['general', 'artist', 'copyright', 'character', 'species']
+                for sublevel in sublevels:
+                    temp_tags.extend(post['tags'][sublevel])
+                post['tags'] = ' '.join(temp_tags)
+                post['score'] = post['score']['total']
+            if COUNT <= max_pages*POST_AMOUNT:
+                max_pages = COUNT // POST_AMOUNT+1
+                # If max_pages is bigger than available pages, loop the function with updated max_pages based on the value of COUNT
+                while loop_msg:
+                    print(f" Processing {COUNT} results.")
+                    loop_msg = False
+                    # avoid showing same msg twice
+                continue
+            else:
+                print(f" Processing {max_pages*POST_AMOUNT} out of {COUNT} results.")
+            break
         return {'post': data}
 
     def get_post(self, add_tags, max_pages=10, id=''):

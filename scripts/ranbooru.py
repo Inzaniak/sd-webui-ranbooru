@@ -33,6 +33,7 @@ COLORED_BG = ['black_background', 'aqua_background', 'white_background', 'colore
 ADD_BG = ['outdoors', 'indoors']
 BW_BG = ['monochrome', 'greyscale', 'grayscale']
 POST_AMOUNT = 100
+COUNT = 100 #Number of images the search returned. Booru classes below were modified to update this value with the latest search result count.
 DEBUG = False
 RATING_TYPES = {
     "none": {
@@ -111,14 +112,18 @@ class Gelbooru(Booru):
         self.fringeBenefits = fringe_benefits
 
     def get_data(self, add_tags, max_pages=10, id=''):
+        global COUNT
         if id:
             add_tags = ''
-        self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages)}{id}{add_tags}"
+        self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
+        # The randint function is an alias to randrange(a, b+1), so 'max_pages' should be passed as 'max_pages-1' 
         if self.fringeBenefits:
             res = requests.get(self.booru_url, cookies={'fringeBenefits': 'yup'})
         else:
             res = requests.get(self.booru_url)
         data = res.json()
+        COUNT = data['@attributes']['count']
+        print(f" Processing {COUNT} results.")
         return data
 
     def get_post(self, add_tags, max_pages=10, id=''):
@@ -131,13 +136,18 @@ class XBooru(Booru):
         super().__init__('xbooru', f'https://xbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit={POST_AMOUNT}')
 
     def get_data(self, add_tags, max_pages=10, id=''):
+        global COUNT
         if id:
             add_tags = ''
-        self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages)}{id}{add_tags}"
+        self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
+        print(self.booru_url)
         res = requests.get(self.booru_url)
         data = res.json()
+        COUNT = 0
         for post in data:
             post['file_url'] = f"https://xbooru.com/images/{post['directory']}/{post['image']}"
+            COUNT += 1
+        print(f" Processing {COUNT} results.")
         return {'post': data}
 
     def get_post(self, add_tags, max_pages=10, id=''):
@@ -150,11 +160,14 @@ class Rule34(Booru):
         super().__init__('rule34', f'https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit={POST_AMOUNT}')
 
     def get_data(self, add_tags, max_pages=10, id=''):
+        global COUNT
         if id:
             add_tags = ''
-        self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages)}{id}{add_tags}"
+        self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
         res = requests.get(self.booru_url)
         data = res.json()
+        COUNT = len(data)
+        print(f" Processing {COUNT} results.")
         return {'post': data}
 
     def get_post(self, add_tags, max_pages=10, id=''):
@@ -167,13 +180,17 @@ class Safebooru(Booru):
         super().__init__('safebooru', f'https://safebooru.org/index.php?page=dapi&s=post&q=index&json=1&limit={POST_AMOUNT}')
 
     def get_data(self, add_tags, max_pages=10, id=''):
+        global COUNT
         if id:
             add_tags = ''
-        self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages)}{id}{add_tags}"
+        self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
         res = requests.get(self.booru_url)
         data = res.json()
+        COUNT = 0
         for post in data:
             post['file_url'] = f"https://safebooru.org/images/{post['directory']}/{post['image']}"
+            COUNT += 1
+        print(f" Processing {COUNT} results.")
         return {'post': data}
 
     def get_post(self, add_tags, max_pages=10, id=''):
@@ -186,11 +203,14 @@ class Konachan(Booru):
         super().__init__('konachan', f'https://konachan.com/post.json?limit={POST_AMOUNT}')
 
     def get_data(self, add_tags, max_pages=10, id=''):
+        global COUNT
         if id:
             add_tags = ''
-        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages)}{id}{add_tags}"
+        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
         res = requests.get(self.booru_url)
         data = res.json()
+        COUNT = len(data)
+        print(f" Processing {COUNT} results.")
         return {'post': data}
 
     def get_post(self, add_tags, max_pages=10, id=''):
@@ -203,11 +223,14 @@ class Yandere(Booru):
         super().__init__('yande.re', f'https://yande.re/post.json?limit={POST_AMOUNT}')
 
     def get_data(self, add_tags, max_pages=10, id=''):
+        global COUNT
         if id:
             add_tags = ''
-        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages)}{id}{add_tags}"
+        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
         res = requests.get(self.booru_url)
         data = res.json()
+        COUNT = len(data)
+        print(f" Processing {COUNT} results.")
         return {'post': data}
 
     def get_post(self, add_tags, max_pages=10, id=''):
@@ -220,11 +243,14 @@ class AIBooru(Booru):
         super().__init__('AIBooru', f'https://aibooru.online/posts.json?limit={POST_AMOUNT}')
 
     def get_data(self, add_tags, max_pages=10, id=''):
+        global COUNT
         if id:
             add_tags = ''
-        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages)}{id}{add_tags}"
+        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
         res = requests.get(self.booru_url)
         data = res.json()
+        COUNT = len(data)
+        print(f" Processing {COUNT} results.")
         for post in data:
             post['tags'] = post['tag_string']
         return {'post': data}
@@ -239,11 +265,14 @@ class Danbooru(Booru):
         super().__init__('danbooru', f'https://danbooru.donmai.us/posts.json?limit={POST_AMOUNT}')
 
     def get_data(self, add_tags, max_pages=10, id=''):
+        global COUNT
         if id:
             add_tags = ''
-        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages)}{id}{add_tags}"
+        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
         res = requests.get(self.booru_url, headers=self.headers)
         data = res.json()
+        COUNT = len(data)
+        print(f" Processing {COUNT} results.")
         for post in data:
             post['tags'] = post['tag_string']
         return {'post': data}
@@ -263,11 +292,14 @@ class e621(Booru):
         super().__init__('danbooru', f'https://e621.net/posts.json?limit={POST_AMOUNT}')
 
     def get_data(self, add_tags, max_pages=10, id=''):
+        global COUNT
         if id:
             add_tags = ''
-        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages)}{id}{add_tags}"
+        self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
         res = requests.get(self.booru_url, headers=self.headers)
         data = res.json()['posts']
+        COUNT = len(data)
+        print(f" Processing {COUNT} results.")
         for post in data:
             temp_tags = []
             sublevels = ['general', 'artist', 'copyright', 'character', 'species']
@@ -878,12 +910,15 @@ class Script(scripts.Script):
         Returns:
             list: the random numbers
         """
-        weights = np.arange(POST_AMOUNT, 0, -1)
+        global COUNT
+        if COUNT > POST_AMOUNT: # Modified to use COUNT instead of POST_AMOUNT
+            COUNT = POST_AMOUNT # If there are more than 100 images, use POST_AMOUNT
+        weights = np.arange(COUNT, 0, -1)
         weights = weights / weights.sum()
         if sorting_order in ('High Score', 'Low Score'):
-            random_numbers = np.random.choice(np.arange(POST_AMOUNT), size=size, p=weights, replace=False)
+            random_numbers = np.random.choice(np.arange(COUNT), size=size, p=weights, replace=False)
         else:
-            random_numbers = random.sample(range(POST_AMOUNT), size)
+            random_numbers = random.sample(range(COUNT), size)
         return random_numbers
 
     def use_autotagger(self, model):

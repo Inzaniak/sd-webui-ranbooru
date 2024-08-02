@@ -798,10 +798,11 @@ class Script(scripts.Script):
                 data['post'] = sorted(data['post'], key=lambda k: k.get('score', 0), reverse=True)
             elif sorting_order == 'Low Score':
                 data['post'] = sorted(data['post'], key=lambda k: k.get('score', 0))
-            random_numbers = self.random_number(sorting_order, p.batch_size * p.n_iter)
             if post_id:
                 print(f'Using post ID: {post_id}')
                 random_numbers = [0 for _ in range(0, p.batch_size * p.n_iter)]
+            else:
+                random_numbers = self.random_number(sorting_order, p.batch_size * p.n_iter)
             for random_number in random_numbers:
                 if same_prompt:
                     random_post = data['post'][random_numbers[0]]

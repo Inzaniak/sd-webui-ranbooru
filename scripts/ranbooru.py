@@ -944,7 +944,7 @@ class Script(scripts.Script):
                     p.prompt = [remove_repeated_tags(pr) for pr in p.prompt]
                 else:
                     p.prompt = modify_prompt(p.prompt, tagged_prompts, type_deepbooru)
-                    p.prompt = remove_repeated_tags(p.prompt) 
+                    p.prompt = remove_repeated_tags(p.prompt[0]) 
 
             if use_img2img:
                 if not use_ip:

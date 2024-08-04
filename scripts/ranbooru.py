@@ -118,7 +118,7 @@ class Gelbooru(Booru):
             if id:
                 add_tags = ''
             self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
-            # The randint function is an alias to randrange(a, b+1), so 'max_pages' should be passed as 'max_pages-1' 
+            # The randint function is an alias to randrange(a, b+1), so 'max_pages' should be passed as 'max_pages-1'
             if self.fringeBenefits:
                 res = requests.get(self.booru_url, cookies={'fringeBenefits': 'yup'})
             else:
@@ -424,12 +424,12 @@ class e621(Booru):
 
 def generate_chaos(pos_tags, neg_tags, chaos_amount):
     """Generates chaos in the prompt by adding random tags from the prompt to the positive and negative prompts
-    
+
     Args:
         pos_tags (str): the positive prompt
         neg_tags (str): the negative prompt
         chaos_amount (float): the percentage of tags to put in the positive prompt
-        
+
     Returns:
         str: the positive prompt
         str: the negative prompt
@@ -451,13 +451,13 @@ def generate_chaos(pos_tags, neg_tags, chaos_amount):
 
 def resize_image(img, width, height, cropping=True):
     """Resize image to specified width and height
-    
+
     Args:
         img (PIL.Image): the image
         width (int): the width in pixels
         height (int): the height in pixels
         cropping (bool): whether to crop the image or not
-        
+
     Returns:
         PIL.Image: the resized image
     """
@@ -498,12 +498,12 @@ def resize_image(img, width, height, cropping=True):
 
 def modify_prompt(prompt, tagged_prompt, type_deepbooru):
     """Modifies the prompt based on the type_deepbooru selected
-    
+
     Args:
         prompt (str): the prompt
         tagged_prompt (str): the prompt tagged by deepbooru
         type_deepbooru (str): the type of modification
-        
+
     Returns:
         str: the modified prompt
     """
@@ -514,22 +514,22 @@ def modify_prompt(prompt, tagged_prompt, type_deepbooru):
     elif type_deepbooru == 'Replace':
         return tagged_prompt
     return prompt
-                
+
 def remove_repeated_tags(prompt):
     """Removes the repeated tags keeping the same order
-    
+
     Args:
         prompt (str): the prompt
-        
+
     Returns:
-        str: the prompt without repeated tags    
+        str: the prompt without repeated tags
     """
     prompt = prompt.split(',')
     new_prompt = []
     for tag in prompt:
         if tag not in new_prompt:
             new_prompt.append(tag)
-    return ','.join(new_prompt) 
+    return ','.join(new_prompt)
 
 def limit_prompt_tags(prompt, limit_tags, mode):
     """Limits the amount of tags in the prompt. It can be done by percentage or by a fixed amount.
@@ -538,7 +538,7 @@ def limit_prompt_tags(prompt, limit_tags, mode):
         prompt (str): the prompt
         limit_tags (float): the percentage of tags to keep
         mode (str): 'Limit' or 'Max'
-        
+
     Returns:
         str: the prompt with the limited amount of tags
     """
@@ -548,7 +548,7 @@ def limit_prompt_tags(prompt, limit_tags, mode):
     elif mode == 'Max':
         clean_prompt = clean_prompt[:limit_tags]
     return ','.join(clean_prompt)
-            
+
 class Script(scripts.Script):
     previous_loras = ''
     last_img = []
@@ -575,80 +575,78 @@ class Script(scripts.Script):
 
     def show(self, is_img2img):
         return scripts.AlwaysVisible
-    
+
     def refresh_ser(self):
         return gr.update(choices=self.get_files(user_search_dir))
     def refresh_rem(self):
         return gr.update(choices=self.get_files(user_remove_dir))
 
     def ui(self, is_img2img):
-        with gr.Group():
-            with InputAccordion(False, label="Ranbooru", elem_id=self.elem_id("ra_enable")) as enabled:
-                booru = gr.Dropdown(
-                    ["gelbooru", "rule34", "safebooru", "danbooru", "konachan", 'yande.re', 'aibooru', 'xbooru', 'e621'], label="Booru", value="gelbooru")
-                max_pages = gr.Slider(label="Max Pages", minimum=1, maximum=100, value=100, step=1)
-                gr.Markdown("""## Post""")
-                post_id = gr.Textbox(lines=1, label="Post ID")
-                gr.Markdown("""## Tags""")
-                tags = gr.Textbox(lines=1, label="Tags to Search (Pre)")
-                remove_tags = gr.Textbox(lines=1, label="Tags to Remove (Post)")
-                mature_rating = gr.Radio(list(RATINGS['gelbooru']), label="Mature Rating", value="All")
-                remove_bad_tags = gr.Checkbox(label="Remove bad tags", value=True)
-                shuffle_tags = gr.Checkbox(label="Shuffle tags", value=True)
-                change_dash = gr.Checkbox(label='Convert "_" to spaces', value=False)
-                same_prompt = gr.Checkbox(label="Use same prompt for all images", value=False)
-                fringe_benefits = gr.Checkbox(label="Fringe Benefits", value=True)
-                limit_tags = gr.Slider(value=1.0, label="Limit tags", minimum=0.05, maximum=1.0, step=0.05)
-                max_tags = gr.Slider(value=100, label="Max tags", minimum=1, maximum=100, step=1)
-                change_background = gr.Radio(["Don't Change", "Add Background", "Remove Background", "Remove All"], label="Change Background", value="Don't Change")
-                change_color = gr.Radio(["Don't Change", "Colored", "Limited Palette", "Monochrome"], label="Change Color", value="Don't Change")
-                sorting_order = gr.Radio(["Random", "High Score", "Low Score"], label="Sorting Order", value="Random")
+        with InputAccordion(False, label="Ranbooru", elem_id=self.elem_id("ra_enable")) as enabled:
+            booru = gr.Dropdown(
+                ["gelbooru", "rule34", "safebooru", "danbooru", "konachan", 'yande.re', 'aibooru', 'xbooru', 'e621'], label="Booru", value="gelbooru")
+            max_pages = gr.Slider(label="Max Pages", minimum=1, maximum=100, value=100, step=1)
+            gr.Markdown("""## Post""")
+            post_id = gr.Textbox(lines=1, label="Post ID")
+            gr.Markdown("""## Tags""")
+            tags = gr.Textbox(lines=1, label="Tags to Search (Pre)")
+            remove_tags = gr.Textbox(lines=1, label="Tags to Remove (Post)")
+            mature_rating = gr.Radio(list(RATINGS['gelbooru']), label="Mature Rating", value="All")
+            remove_bad_tags = gr.Checkbox(label="Remove bad tags", value=True)
+            shuffle_tags = gr.Checkbox(label="Shuffle tags", value=True)
+            change_dash = gr.Checkbox(label='Convert "_" to spaces', value=False)
+            same_prompt = gr.Checkbox(label="Use same prompt for all images", value=False)
+            fringe_benefits = gr.Checkbox(label="Fringe Benefits", value=True)
+            limit_tags = gr.Slider(value=1.0, label="Limit tags", minimum=0.05, maximum=1.0, step=0.05)
+            max_tags = gr.Slider(value=100, label="Max tags", minimum=1, maximum=100, step=1)
+            change_background = gr.Radio(["Don't Change", "Add Background", "Remove Background", "Remove All"], label="Change Background", value="Don't Change")
+            change_color = gr.Radio(["Don't Change", "Colored", "Limited Palette", "Monochrome"], label="Change Color", value="Don't Change")
+            sorting_order = gr.Radio(["Random", "High Score", "Low Score"], label="Sorting Order", value="Random")
 
-                booru.change(get_available_ratings, booru, mature_rating)  # update available ratings
-                booru.change(show_fringe_benefits, booru, fringe_benefits)  # display fringe benefits checkbox if gelbooru is selected
+            booru.change(get_available_ratings, booru, mature_rating)  # update available ratings
+            booru.change(show_fringe_benefits, booru, fringe_benefits)  # display fringe benefits checkbox if gelbooru is selected
 
-                gr.Markdown("""\n---\n""")
-                with gr.Group():
-                    with gr.Accordion("Img2Img", open=False):
-                        use_img2img = gr.Checkbox(label="Use img2img", value=False)
-                        use_ip = gr.Checkbox(label="Send to Controlnet", value=False)
-                        denoising = gr.Slider(value=0.75, label="Denoising", minimum=0.05, maximum=1.0, step=0.05)
-                        use_last_img = gr.Checkbox(label="Use last image as img2img", value=False)
-                        crop_center = gr.Checkbox(label="Crop Center", value=False)
-                        use_deepbooru = gr.Checkbox(label="Use Deepbooru", value=False)
-                        type_deepbooru = gr.Radio(["Add Before", "Add After", "Replace"], label="Deepbooru Tags Position", value="Add Before")
-                with gr.Group():
-                    with gr.Accordion("File", open=False):
-                        use_search_txt = gr.Checkbox(label="Use tags_search.txt", value=False)  
-                        choose_search_txt = gr.Dropdown(self.get_files(user_search_dir), label="Choose tags_search.txt", value="")
-                        search_refresh_btn = gr.Button("Refresh")
-                        use_remove_txt = gr.Checkbox(label="Use tags_remove.txt", value=False)
-                        choose_remove_txt = gr.Dropdown(self.get_files(user_remove_dir), label="Choose tags_remove.txt", value="")
-                        remove_refresh_btn = gr.Button("Refresh")
-                with gr.Group():
-                    with gr.Accordion("Extra", open=False):
-                        with gr.Box():
-                            mix_prompt = gr.Checkbox(label="Mix prompts", value=False)
-                            mix_amount = gr.Slider(value=2, label="Mix amount", minimum=2, maximum=10, step=1)
-                        with gr.Box():
-                            chaos_mode = gr.Radio(["None", "Chaos", "Less Chaos"], label="Chaos Mode", value="None")
-                            chaos_amount = gr.Slider(value=0.5, label="Chaos Amount %", minimum=0.1, maximum=1, step=0.05)
-                        with gr.Box():
-                            negative_mode = gr.Radio(["None", "Negative"], label="Negative Mode", value="None")
-                            use_same_seed = gr.Checkbox(label="Use same seed for all pictures", value=False)
-                        with gr.Box():
-                            use_cache = gr.Checkbox(label="Use cache", value=True)
-        with gr.Group():
-            with InputAccordion(False, label="LoRAnado", elem_id=self.elem_id("lo_enable")) as lora_enabled:
-                with gr.Box():
-                    lora_lock_prev = gr.Checkbox(label="Lock previous LoRAs", value=False)
-                    lora_folder = gr.Textbox(lines=1, label="LoRAs Subfolder")
-                    lora_amount = gr.Slider(default=1, label="LoRAs Amount", minimum=1, maximum=10, step=1)
-                with gr.Box():
-                    lora_min = gr.Slider(value=-1.0, label="Min LoRAs Weight", minimum=-1.0, maximum=1, step=0.1)
-                    lora_max = gr.Slider(value=1.0, label="Max LoRAs Weight", minimum=-1.0, maximum=1.0, step=0.1)
-                    lora_custom_weights = gr.Textbox(lines=1, label="LoRAs Custom Weights")
-        
+            gr.Markdown("""\n---\n""")
+            with gr.Group():
+                with gr.Accordion("Img2Img", open=False):
+                    use_img2img = gr.Checkbox(label="Use img2img", value=False)
+                    use_ip = gr.Checkbox(label="Send to Controlnet", value=False)
+                    denoising = gr.Slider(value=0.75, label="Denoising", minimum=0.05, maximum=1.0, step=0.05)
+                    use_last_img = gr.Checkbox(label="Use last image as img2img", value=False)
+                    crop_center = gr.Checkbox(label="Crop Center", value=False)
+                    use_deepbooru = gr.Checkbox(label="Use Deepbooru", value=False)
+                    type_deepbooru = gr.Radio(["Add Before", "Add After", "Replace"], label="Deepbooru Tags Position", value="Add Before")
+            with gr.Group():
+                with gr.Accordion("File", open=False):
+                    use_search_txt = gr.Checkbox(label="Use tags_search.txt", value=False)
+                    choose_search_txt = gr.Dropdown(self.get_files(user_search_dir), label="Choose tags_search.txt", value="")
+                    search_refresh_btn = gr.Button("Refresh")
+                    use_remove_txt = gr.Checkbox(label="Use tags_remove.txt", value=False)
+                    choose_remove_txt = gr.Dropdown(self.get_files(user_remove_dir), label="Choose tags_remove.txt", value="")
+                    remove_refresh_btn = gr.Button("Refresh")
+            with gr.Group():
+                with gr.Accordion("Extra", open=False):
+                    with gr.Box():
+                        mix_prompt = gr.Checkbox(label="Mix prompts", value=False)
+                        mix_amount = gr.Slider(value=2, label="Mix amount", minimum=2, maximum=10, step=1)
+                    with gr.Box():
+                        chaos_mode = gr.Radio(["None", "Chaos", "Less Chaos"], label="Chaos Mode", value="None")
+                        chaos_amount = gr.Slider(value=0.5, label="Chaos Amount %", minimum=0.1, maximum=1, step=0.05)
+                    with gr.Box():
+                        negative_mode = gr.Radio(["None", "Negative"], label="Negative Mode", value="None")
+                        use_same_seed = gr.Checkbox(label="Use same seed for all pictures", value=False)
+                    with gr.Box():
+                        use_cache = gr.Checkbox(label="Use cache", value=True)
+        with InputAccordion(False, label="LoRAnado", elem_id=self.elem_id("lo_enable")) as lora_enabled:
+            with gr.Box():
+                lora_lock_prev = gr.Checkbox(label="Lock previous LoRAs", value=False)
+                lora_folder = gr.Textbox(lines=1, label="LoRAs Subfolder")
+                lora_amount = gr.Slider(default=1, label="LoRAs Amount", minimum=1, maximum=10, step=1)
+            with gr.Box():
+                lora_min = gr.Slider(value=-1.0, label="Min LoRAs Weight", minimum=-1.0, maximum=1, step=0.1)
+                lora_max = gr.Slider(value=1.0, label="Max LoRAs Weight", minimum=-1.0, maximum=1.0, step=0.1)
+                lora_custom_weights = gr.Textbox(lines=1, label="LoRAs Custom Weights")
+
         search_refresh_btn.click(
             fn=self.refresh_ser,
             inputs=[],
@@ -917,13 +915,13 @@ class Script(scripts.Script):
                             p.negative_prompt[num] += random.choice(p.negative_prompt[num].split(','))
                             # p.negative_prompt[num] += '_'
                             neg = model_hijack.get_prompt_lengths(p.negative_prompt[num])[1]
-            
+
             if limit_tags < 1:
                 if isinstance(p.prompt, list):
                     p.prompt = [limit_prompt_tags(pr, limit_tags, 'Limit') for pr in p.prompt]
                 else:
                     p.prompt = limit_prompt_tags(p.prompt, limit_tags, 'Limit')
-                    
+
             if max_tags > 0:
                 if isinstance(p.prompt, list):
                     p.prompt = [limit_prompt_tags(pr, max_tags, 'Max') for pr in p.prompt]
@@ -945,7 +943,7 @@ class Script(scripts.Script):
                     p.prompt = [remove_repeated_tags(pr) for pr in p.prompt]
                 else:
                     p.prompt = modify_prompt(p.prompt, tagged_prompts, type_deepbooru)
-                    p.prompt = remove_repeated_tags(p.prompt[0]) 
+                    p.prompt = remove_repeated_tags(p.prompt[0])
 
             if use_img2img:
                 if not use_ip:
@@ -1013,11 +1011,11 @@ class Script(scripts.Script):
 
     def random_number(self, sorting_order, size):
         """Generates random numbers based on the sorting_order
-        
+
         Args:
             sorting_order (str): the sorting order. It can be 'Random', 'High Score' or 'Low Score'
             size (int): the amount of random numbers to generate
-            
+
         Returns:
             list: the random numbers
         """
@@ -1034,10 +1032,10 @@ class Script(scripts.Script):
 
     def use_autotagger(self, model):
         """Use the autotagger to tag the images
-        
+
         Args:
             model (str): the model to use. Right now only 'deepbooru' is supported
-            
+
         Returns:
             list: the tagged prompts
         """

@@ -193,16 +193,16 @@ class Rule34(Booru):
             res = requests.get(self.booru_url)
             data = res.json()
             COUNT = len(data)
-            if COUNT <= max_pages*POST_AMOUNT:
-                max_pages = COUNT // POST_AMOUNT+1
-                # If max_pages is bigger than available pages, loop the function with updated max_pages based on the value of COUNT
+            if COUNT == 0:
+                max_pages = 2
+                # Rule34 does not have a way to know the amount of results available in the search, so we need to run the function again with a fixed amount of pages
                 while loop_msg:
                     print(f" Processing {COUNT} results.")
                     loop_msg = False
                     # avoid showing same msg twice
                 continue
             else:
-                print(f" Processing {max_pages*POST_AMOUNT} out of {COUNT} results.")
+                print(f"Found enough results")
             break
         return {'post': data}
 
@@ -260,16 +260,16 @@ class Konachan(Booru):
             res = requests.get(self.booru_url)
             data = res.json()
             COUNT = len(data)
-            if COUNT <= max_pages*POST_AMOUNT:
-                max_pages = COUNT // POST_AMOUNT+1
-                # If max_pages is bigger than available pages, loop the function with updated max_pages based on the value of COUNT
+            if COUNT == 0:
+                max_pages = 2
+                # Konachan does not have a way to know the amount of results available in the search, so we need to run the function again with a fixed amount of pages
                 while loop_msg:
                     print(f" Processing {COUNT} results.")
                     loop_msg = False
                     # avoid showing same msg twice
                 continue
             else:
-                print(f" Processing {max_pages*POST_AMOUNT} out of {COUNT} results.")
+                print(f"Found enough results")
             break
         return {'post': data}
 
@@ -292,16 +292,17 @@ class Yandere(Booru):
             res = requests.get(self.booru_url)
             data = res.json()
             COUNT = len(data)
-            if COUNT <= max_pages*POST_AMOUNT:
-                max_pages = COUNT // POST_AMOUNT+1
-                # If max_pages is bigger than available pages, loop the function with updated max_pages based on the value of COUNT
+            COUNT = len(data)
+            if COUNT == 0:
+                max_pages = 2
+                # Yandere does not have a way to know the amount of results available in the search, so we need to run the function again with a fixed amount of pages
                 while loop_msg:
                     print(f" Processing {COUNT} results.")
                     loop_msg = False
                     # avoid showing same msg twice
                 continue
             else:
-                print(f" Processing {max_pages*POST_AMOUNT} out of {COUNT} results.")
+                print(f"Found enough results")
             break
         return {'post': data}
 
@@ -323,19 +324,19 @@ class AIBooru(Booru):
             self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
             res = requests.get(self.booru_url)
             data = res.json()
-            COUNT = len(data)
             for post in data:
                 post['tags'] = post['tag_string']
-            if COUNT <= max_pages*POST_AMOUNT:
-                max_pages = COUNT // POST_AMOUNT+1
-                # If max_pages is bigger than available pages, loop the function with updated max_pages based on the value of COUNT
+            COUNT = len(data)
+            if COUNT == 0:
+                max_pages = 2
+                # AIBooru does not have a way to know the amount of results available in the search, so we need to run the function again with a fixed amount of pages
                 while loop_msg:
                     print(f" Processing {COUNT} results.")
                     loop_msg = False
                     # avoid showing same msg twice
                 continue
             else:
-                print(f" Processing {max_pages*POST_AMOUNT} out of {COUNT} results.")
+                print(f"Found enough results")
             break
         return {'post': data}
 
@@ -357,19 +358,19 @@ class Danbooru(Booru):
             self.booru_url = f"{self.booru_url}&page={random.randint(0, max_pages-1)}{id}{add_tags}"
             res = requests.get(self.booru_url, headers=self.headers)
             data = res.json()
-            COUNT = len(data)
             for post in data:
                 post['tags'] = post['tag_string']
-            if COUNT <= max_pages*POST_AMOUNT:
-                max_pages = COUNT // POST_AMOUNT+1
-                # If max_pages is bigger than available pages, loop the function with updated max_pages based on the value of COUNT
+            COUNT = len(data)
+            if COUNT == 0:
+                max_pages = 2
+                # Danbooru does not have a way to know the amount of results available in the search, so we need to run the function again with a fixed amount of pages
                 while loop_msg:
                     print(f" Processing {COUNT} results.")
                     loop_msg = False
                     # avoid showing same msg twice
                 continue
             else:
-                print(f" Processing {max_pages*POST_AMOUNT} out of {COUNT} results.")
+                print(f"Found enough results")
             break
         return {'post': data}
 

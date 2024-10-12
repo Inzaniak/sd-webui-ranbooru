@@ -641,7 +641,7 @@ class Script(scripts.Script):
             with gr.Box():
                 lora_lock_prev = gr.Checkbox(label="Lock previous LoRAs", value=False)
                 lora_folder = gr.Textbox(lines=1, label="LoRAs Subfolder")
-                lora_amount = gr.Slider(default=1, label="LoRAs Amount", minimum=1, maximum=10, step=1)
+                lora_amount = gr.Slider(value=1, label="LoRAs Amount", minimum=1, maximum=10, step=1)
             with gr.Box():
                 lora_min = gr.Slider(value=-1.0, label="Min LoRAs Weight", minimum=-1.0, maximum=1, step=0.1)
                 lora_max = gr.Slider(value=1.0, label="Max LoRAs Weight", minimum=-1.0, maximum=1.0, step=0.1)

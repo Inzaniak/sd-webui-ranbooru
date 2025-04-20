@@ -1,4 +1,5 @@
 from io import BytesIO
+import html
 import random
 import requests
 import modules.scripts as scripts
@@ -842,7 +843,7 @@ class Script(scripts.Script):
             new_prompts = []
             # Cleaning Tags
             for prompt in prompts:
-                prompt_tags = [tag for tag in prompt.split(',') if tag.strip() not in bad_tags]
+                prompt_tags = [tag for tag in html.unescape(prompt).split(',') if tag.strip() not in bad_tags]
                 for bad_tag in bad_tags:
                     if '*' in bad_tag:
                         prompt_tags = [tag for tag in prompt_tags if bad_tag.replace('*', '') not in tag]

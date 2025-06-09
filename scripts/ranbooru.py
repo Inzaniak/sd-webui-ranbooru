@@ -958,9 +958,14 @@ class Script(scripts.Script):
             if use_forbidden_prompt_txt and choose_forbidden_prompt_txt:
                 forbidden_file_path = os.path.join(user_forbidden_prompt_dir, choose_forbidden_prompt_txt)
                 if os.path.exists(forbidden_file_path):
-                    with open(forbidden_file_path, 'r') as f:
-                        file_forbidden = [line.strip().lower() for line in f if line.strip()]
-                    final_forbidden_tags.update(file_forbidden)
+                    try:
+                        with open(forbidden_file_path, 'r', encoding='utf-8') as f: # <--- Changed: Added encoding='utf-8'
+                            file_forbidden = [line.strip().lower() for line in f if line.strip()]
+                        final_forbidden_tags.update(file_forbidden)
+                    except Exception as e:
+                        print(f"Error reading forbidden tags file {forbidden_file_path}: {e}")
+                        # Optionally, could fall back to trying system default encoding or just skip if UTF-8 fails
+                        # For now, just printing error and continuing with tags gathered so far.
 
             if final_forbidden_tags:
                 # Determine if p.prompt is a list (batch processing) or a single string
@@ -1068,7 +1073,7 @@ class Script(scripts.Script):
         elif lora_enabled:
             p = self.loranado(lora_enabled, lora_folder, lora_amount, lora_min, lora_max, lora_custom_weights, p, lora_lock_prev)
 
-    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache):
+    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, forbidden_prompt_tags_text, use_forbidden_prompt_txt, choose_forbidden_prompt_txt, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache, disable_prompt_modification):
         if use_img2img and not use_ip and enabled:
             print('Using pictures')
             if crop_center:

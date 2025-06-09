@@ -739,9 +739,7 @@ class Script(scripts.Script):
                 bad_tags.append(remove_tags)
 
             if use_remove_txt:
-                with open(os.path.join(user_remove_dir, choose_remove_txt), 'r') as f:
-                    tags_to_remove_from_file = [line.strip() for line in f if line.strip()]
-                bad_tags.extend(tags_to_remove_from_file)
+                bad_tags.extend(open(os.path.join(user_remove_dir, choose_remove_txt), 'r').read().split(','))
 
             # Manage Backgrounds
             background_options = {
@@ -770,11 +768,14 @@ class Script(scripts.Script):
                     p.prompt = f'{p.prompt},{color_option}' if p.prompt else color_option
 
             if use_search_txt:
-                with open(os.path.join(user_search_dir, choose_search_txt), 'r') as f:
-                    possible_search_lines = [line.strip() for line in f if line.strip()]
-                if possible_search_lines: # Ensure the list is not empty
-                    selected_tags_line = random.choice(possible_search_lines)
-                    tags = f'{tags},{selected_tags_line}' if tags else selected_tags_line
+                search_tags = open(os.path.join(user_search_dir, choose_search_txt), 'r').read()
+                search_tags_r = search_tags.replace(" ", "") # Removes all spaces
+                split_tags = search_tags_r.splitlines()
+                filtered_tags = [line for line in split_tags if line.strip()]
+                if filtered_tags: # Ensure the list is not empty before choosing
+                    rand_selected = random.randint(0, len(filtered_tags) - 1)
+                    selected_tags = filtered_tags[rand_selected]
+                    tags = f'{tags},{selected_tags}' if tags else selected_tags
 
             add_tags = '&tags=-animated'
             if tags:

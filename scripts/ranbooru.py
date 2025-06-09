@@ -603,6 +603,7 @@ class Script(scripts.Script):
             change_background = gr.Radio(["Don't Change", "Add Background", "Remove Background", "Remove All"], label="Change Background", value="Don't Change")
             change_color = gr.Radio(["Don't Change", "Colored", "Limited Palette", "Monochrome"], label="Change Color", value="Don't Change")
             sorting_order = gr.Radio(["Random", "High Score", "Low Score"], label="Sorting Order", value="Random")
+            disable_prompt_modification = gr.Checkbox(label="Disable Ranbooru prompt modification", value=False) # New checkbox
 
             booru.change(get_available_ratings, booru, mature_rating)  # update available ratings
             booru.change(show_fringe_benefits, booru, fringe_benefits)  # display fringe benefits checkbox if gelbooru is selected
@@ -660,7 +661,7 @@ class Script(scripts.Script):
             outputs=[choose_remove_txt]
         )
 
-        return [enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache]
+        return [enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache, disable_prompt_modification] # Added to return list
 
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -698,13 +699,19 @@ class Script(scripts.Script):
                 p.prompt = f'{lora_prompt} {p.prompt}'
         return p
 
-    def before_process(self, p, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache):
+    def before_process(self, p, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache, disable_prompt_modification): # Added disable_prompt_modification parameter
         # Manage Cache
         if use_cache and not requests_cache.patcher.is_installed():
             requests_cache.install_cache('ranbooru_cache', backend='sqlite', expire_after=3600)
         elif not use_cache and requests_cache.patcher.is_installed():
             requests_cache.uninstall_cache()
         if enabled:
+            # If disable_prompt_modification is checked, skip all prompt modifications
+            if disable_prompt_modification:
+                if lora_enabled: # Still apply LoRAs if lora_enabled
+                    p = self.loranado(lora_enabled, lora_folder, lora_amount, lora_min, lora_max, lora_custom_weights, p, lora_lock_prev)
+                return
+
             # Initialize APIs
             booru_apis = {
                 'gelbooru': Gelbooru(fringe_benefits),
@@ -854,7 +861,12 @@ class Script(scripts.Script):
             prompts = new_prompts
             if len(prompts) == 1:
                 print('Processing Single Prompt')
-                p.prompt = f"{p.prompt},{prompts[-1]}" if p.prompt else prompts[-1]
+                # Check if the prompt has been modified by dynamic prompts
+                if "__" in p.prompt:
+                    p.prompt = f"{p.prompt},{prompts[-1]}" # Append to existing prompt
+                else:
+                    p.prompt = f"{self.original_prompt},{prompts[-1]}" if self.original_prompt else prompts[-1] # Keep original behavior
+
                 if chaos_mode in ['Chaos', 'Less Chaos']:
                     negative_prompt = '' if chaos_mode == 'Less Chaos' else p.negative_prompt
                     p.prompt, negative_prompt = generate_chaos(p.prompt, negative_prompt, chaos_amount)
@@ -862,24 +874,31 @@ class Script(scripts.Script):
             else:
                 print('Processing Multiple Prompts')
                 negative_prompts = []
-                new_prompts = []
+                new_prompts_list = [] # Renamed to avoid conflict
                 if chaos_mode == 'Chaos':
                     for prompt in prompts:
                         tmp_prompt, negative_prompt = generate_chaos(prompt, p.negative_prompt, chaos_amount)
-                        new_prompts.append(tmp_prompt)
+                        new_prompts_list.append(tmp_prompt)
                         negative_prompts.append(negative_prompt)
-                    prompts = new_prompts
+                    prompts = new_prompts_list
                     p.negative_prompt = negative_prompts
                 elif chaos_mode == 'Less Chaos':
                     for prompt in prompts:
                         tmp_prompt, negative_prompt = generate_chaos(prompt, '', chaos_amount)
-                        new_prompts.append(tmp_prompt)
+                        new_prompts_list.append(tmp_prompt)
                         negative_prompts.append(negative_prompt)
-                    prompts = new_prompts
-                    p.negative_prompt = [p.negative_prompt + ',' + negative_prompt for negative_prompt in negative_prompts]
+                    prompts = new_prompts_list
+                    p.negative_prompt = [p.negative_prompt + ',' + negative_prompt for negative_prompt in negative_prompts] # Original behavior: p.negative_prompt should be a list of strings
                 else:
                     p.negative_prompt = [p.negative_prompt for _ in range(0, p.batch_size * p.n_iter)]
-                p.prompt = prompts if not p.prompt else [f"{p.prompt},{prompt}" for prompt in prompts]
+
+                # Check if the prompt has been modified by dynamic prompts
+                if "__" in p.prompt:
+                    p.prompt = [f"{p.prompt},{prompt}" for prompt in prompts] # Append to existing prompt
+                else:
+                    p.prompt = prompts if not self.original_prompt else [f"{self.original_prompt},{prompt}" for prompt in prompts] # Keep original behavior
+
+
                 if use_img2img:
                     if len(last_img) < p.batch_size * p.n_iter:
                         last_img = [last_img[0] for _ in range(0, p.batch_size * p.n_iter)]

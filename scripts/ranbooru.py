@@ -742,6 +742,14 @@ class Script(scripts.Script):
         return p
 
     def before_process(self, p, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, forbidden_prompt_tags_text, use_forbidden_prompt_txt, choose_forbidden_prompt_txt, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache, disable_prompt_modification):
+
+        # Note on prompt formatting:
+        # The Stable Diffusion Web UI typically processes the main prompt input into a single string,
+        # often converting line breaks (newlines) into spaces or commas before it reaches script processing.
+        # This script (Ranbooru) receives p.prompt in that processed state.
+        # Ranbooru itself constructs its portion of the prompt using comma-separated tags,
+        # and generally appends its tags to the existing or original prompt content.
+
         # Manage Cache
         if use_cache and not requests_cache.patcher.is_installed():
             requests_cache.install_cache('ranbooru_cache', backend='sqlite', expire_after=3600)
@@ -904,47 +912,66 @@ class Script(scripts.Script):
             prompts = new_prompts
             if len(prompts) == 1:
                 print('Processing Single Prompt')
-                # Check if the prompt has been modified by dynamic prompts
-                if "__" in p.prompt:
-                    p.prompt = f"{p.prompt},{prompts[-1]}" # Append to existing prompt
-                else:
-                    p.prompt = f"{self.original_prompt},{prompts[-1]}" if self.original_prompt else prompts[-1] # Keep original behavior
+                ranbooru_tags_to_add = prompts[0]
 
+                current_prompt_content = p.prompt.strip()
+                if current_prompt_content and ranbooru_tags_to_add:
+                    p.prompt = f"{current_prompt_content},{ranbooru_tags_to_add}"
+                elif ranbooru_tags_to_add: # current_prompt_content is empty
+                    p.prompt = ranbooru_tags_to_add
+                # If ranbooru_tags_to_add is empty, p.prompt remains current_prompt_content, which is intended.
+
+                # Original chaos logic for single prompt (applied after p.prompt is updated with ranbooru tags)
                 if chaos_mode in ['Chaos', 'Less Chaos']:
-                    negative_prompt = '' if chaos_mode == 'Less Chaos' else p.negative_prompt
-                    p.prompt, negative_prompt = generate_chaos(p.prompt, negative_prompt, chaos_amount)
-                    p.negative_prompt = f"{p.negative_prompt},{negative_prompt}" if p.negative_prompt else negative_prompt
-            else:
+                    base_neg_for_chaos = p.negative_prompt if chaos_mode == 'Chaos' else ''
+                    p.prompt, generated_chaos_neg_tags = generate_chaos(p.prompt, base_neg_for_chaos, chaos_amount)
+                    if p.negative_prompt and generated_chaos_neg_tags:
+                        p.negative_prompt = f"{p.negative_prompt},{generated_chaos_neg_tags}"
+                    elif generated_chaos_neg_tags:
+                        p.negative_prompt = generated_chaos_neg_tags
+            else: # len(prompts) > 1
                 print('Processing Multiple Prompts')
-                negative_prompts = []
-                new_prompts_list = [] # Renamed to avoid conflict
+
+                base_neg_prompt_from_ui = p.negative_prompt # This is the single negative prompt from UI before batch processing
+
                 if chaos_mode == 'Chaos':
-                    for prompt in prompts:
-                        tmp_prompt, negative_prompt = generate_chaos(prompt, p.negative_prompt, chaos_amount)
-                        new_prompts_list.append(tmp_prompt)
-                        negative_prompts.append(negative_prompt)
-                    prompts = new_prompts_list
-                    p.negative_prompt = negative_prompts
+                    new_positive_prompts_list = []
+                    new_negative_prompts_list = []
+                    for ran_prompt_item in prompts: # 'prompts' here are the ranbooru tags for each image
+                        tmp_pos, tmp_neg = generate_chaos(ran_prompt_item, base_neg_prompt_from_ui, chaos_amount)
+                        new_positive_prompts_list.append(tmp_pos)
+                        new_negative_prompts_list.append(tmp_neg)
+                    prompts = new_positive_prompts_list # 'prompts' now contains chaos-modified ranbooru tags
+                    p.negative_prompt = new_negative_prompts_list
                 elif chaos_mode == 'Less Chaos':
-                    for prompt in prompts:
-                        tmp_prompt, negative_prompt = generate_chaos(prompt, '', chaos_amount)
-                        new_prompts_list.append(tmp_prompt)
-                        negative_prompts.append(negative_prompt)
-                    prompts = new_prompts_list
-                    p.negative_prompt = [p.negative_prompt + ',' + negative_prompt for negative_prompt in negative_prompts] # Original behavior: p.negative_prompt should be a list of strings
-                else:
-                    p.negative_prompt = [p.negative_prompt for _ in range(0, p.batch_size * p.n_iter)]
+                    new_positive_prompts_list = []
+                    new_negative_prompts_list = []
+                    for ran_prompt_item in prompts:
+                        tmp_pos, tmp_neg_chaos_only = generate_chaos(ran_prompt_item, "", chaos_amount)
+                        new_positive_prompts_list.append(tmp_pos)
+                        current_neg = f"{base_neg_prompt_from_ui},{tmp_neg_chaos_only}" if base_neg_prompt_from_ui and tmp_neg_chaos_only else (base_neg_prompt_from_ui or tmp_neg_chaos_only or "")
+                        new_negative_prompts_list.append(current_neg)
+                    prompts = new_positive_prompts_list
+                    p.negative_prompt = new_negative_prompts_list
+                else: # No chaos mode
+                    # Ensure p.negative_prompt is a list matching batch size, using the original UI negative prompt
+                    p.negative_prompt = [base_neg_prompt_from_ui for _ in range(len(prompts))]
 
-                # Check if the prompt has been modified by dynamic prompts
-                if "__" in p.prompt:
-                    p.prompt = [f"{p.prompt},{prompt}" for prompt in prompts] # Append to existing prompt
-                else:
-                    p.prompt = prompts if not self.original_prompt else [f"{self.original_prompt},{prompt}" for prompt in prompts] # Keep original behavior
+                base_prompt_from_ui = self.original_prompt.strip()
+                processed_prompts_list = []
+                for ran_prompt_item in prompts:
+                    if base_prompt_from_ui and ran_prompt_item:
+                        processed_prompts_list.append(f"{base_prompt_from_ui},{ran_prompt_item}")
+                    elif ran_prompt_item: # base_prompt_from_ui is empty
+                        processed_prompts_list.append(ran_prompt_item)
+                    else: # ran_prompt_item is empty (or both are empty)
+                        processed_prompts_list.append(base_prompt_from_ui)
+                p.prompt = processed_prompts_list
 
+                if use_img2img: # This check was outside the len(prompts) conditions before, ensure it's correctly placed if specific to multi-prompt
+                    if len(last_img) < p.batch_size * p.n_iter: # p.batch_size * p.n_iter should match len(prompts)
+                        last_img = [last_img[0] for _ in range(len(prompts))]
 
-                if use_img2img:
-                    if len(last_img) < p.batch_size * p.n_iter:
-                        last_img = [last_img[0] for _ in range(0, p.batch_size * p.n_iter)]
 
             # --- BEGIN NEW FORBIDDEN PROMPT TAGS FILTERING ---
             final_forbidden_tags = set() # Use a set for efficient lookup

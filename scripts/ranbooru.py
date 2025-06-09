@@ -20,8 +20,10 @@ extension_root = scripts.basedir()
 user_data_dir = os.path.join(extension_root, 'user')
 user_search_dir = os.path.join(user_data_dir, 'search')
 user_remove_dir = os.path.join(user_data_dir, 'remove')
+user_forbidden_prompt_dir = os.path.join(user_data_dir, 'forbidden_prompt')
 os.makedirs(user_search_dir, exist_ok=True)
 os.makedirs(user_remove_dir, exist_ok=True)
+os.makedirs(user_forbidden_prompt_dir, exist_ok=True)
 
 if not os.path.isfile(os.path.join(user_search_dir, 'tags_search.txt')):
     with open(os.path.join(user_search_dir, 'tags_search.txt'), 'w'):
@@ -29,6 +31,11 @@ if not os.path.isfile(os.path.join(user_search_dir, 'tags_search.txt')):
 if not os.path.isfile(os.path.join(user_remove_dir, 'tags_remove.txt')):
     with open(os.path.join(user_remove_dir, 'tags_remove.txt'), 'w'):
         pass
+if not os.path.isfile(os.path.join(user_forbidden_prompt_dir, 'tags_forbidden.txt')):
+    with open(os.path.join(user_forbidden_prompt_dir, 'tags_forbidden.txt'), 'w') as f:
+        f.write("# Add tags here, one per line\n")
+        f.write("artist_name_example\n")
+        f.write("character_name_example\n")
 
 COLORED_BG = ['black_background', 'aqua_background', 'white_background', 'colored_background', 'gray_background', 'blue_background', 'green_background', 'red_background', 'brown_background', 'purple_background', 'yellow_background', 'orange_background', 'pink_background', 'plain', 'transparent_background', 'simple_background', 'two-tone_background', 'grey_background']
 ADD_BG = ['outdoors', 'indoors']
@@ -582,6 +589,29 @@ class Script(scripts.Script):
     def refresh_rem(self):
         return gr.update(choices=self.get_files(user_remove_dir))
 
+    def get_forbidden_files(self):
+        os.makedirs(user_forbidden_prompt_dir, exist_ok=True)
+        files = [f for f in os.listdir(user_forbidden_prompt_dir) if f.endswith('.txt')]
+        if not files and not os.path.exists(os.path.join(user_forbidden_prompt_dir, 'tags_forbidden.txt')):
+            # Create a dummy file if the directory is empty and the default file doesn't exist
+            with open(os.path.join(user_forbidden_prompt_dir, 'tags_forbidden.txt'), 'w') as f:
+                f.write("# Add tags here, one per line\n")
+                f.write("artist_name_example\n")
+                f.write("character_name_example\n")
+            files.append('tags_forbidden.txt')
+        elif 'tags_forbidden.txt' not in files and not os.path.exists(os.path.join(user_forbidden_prompt_dir, 'tags_forbidden.txt')):
+             with open(os.path.join(user_forbidden_prompt_dir, 'tags_forbidden.txt'), 'w') as f:
+                f.write("# Add tags here, one per line\n")
+                f.write("artist_name_example\n")
+                f.write("character_name_example\n")
+        # Ensure 'tags_forbidden.txt' is in the list if it exists, even if other files are present
+        if 'tags_forbidden.txt' not in files and os.path.exists(os.path.join(user_forbidden_prompt_dir, 'tags_forbidden.txt')):
+            files.append('tags_forbidden.txt')
+        return files if files else ['tags_forbidden.txt'] # Ensure at least tags_forbidden.txt is listed
+
+    def refresh_forbidden_files(self):
+        return gr.update(choices=self.get_forbidden_files())
+
     def ui(self, is_img2img):
         with InputAccordion(False, label="Ranbooru", elem_id=self.elem_id("ra_enable")) as enabled:
             booru = gr.Dropdown(
@@ -608,6 +638,12 @@ class Script(scripts.Script):
             booru.change(get_available_ratings, booru, mature_rating)  # update available ratings
             booru.change(show_fringe_benefits, booru, fringe_benefits)  # display fringe benefits checkbox if gelbooru is selected
 
+            gr.Markdown("""\n---\n""")
+            gr.Markdown("### Post-Fetch Prompt Tag Filtering")
+            forbidden_prompt_tags_text = gr.Textbox(lines=2, label="Forbidden Prompt Tags (Manual Input)", info="Comma-separated. Tags to remove from prompt AFTER image selection.")
+            use_forbidden_prompt_txt = gr.Checkbox(label="Use Forbidden Prompt Tags from file", value=False)
+            choose_forbidden_prompt_txt = gr.Dropdown(self.get_forbidden_files(), label="Choose Forbidden Prompt Tags .txt file", value="tags_forbidden.txt")
+            forbidden_refresh_btn = gr.Button("Refresh Forbidden Files")
             gr.Markdown("""\n---\n""")
             with gr.Group():
                 with gr.Accordion("Img2Img", open=False):
@@ -661,7 +697,13 @@ class Script(scripts.Script):
             outputs=[choose_remove_txt]
         )
 
-        return [enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache, disable_prompt_modification] # Added to return list
+        forbidden_refresh_btn.click(
+            fn=self.refresh_forbidden_files,
+            inputs=[],
+            outputs=[choose_forbidden_prompt_txt]
+        )
+
+        return [enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, forbidden_prompt_tags_text, use_forbidden_prompt_txt, choose_forbidden_prompt_txt, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache, disable_prompt_modification]
 
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -699,7 +741,7 @@ class Script(scripts.Script):
                 p.prompt = f'{lora_prompt} {p.prompt}'
         return p
 
-    def before_process(self, p, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache, disable_prompt_modification): # Added disable_prompt_modification parameter
+    def before_process(self, p, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, forbidden_prompt_tags_text, use_forbidden_prompt_txt, choose_forbidden_prompt_txt, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache, disable_prompt_modification):
         # Manage Cache
         if use_cache and not requests_cache.patcher.is_installed():
             requests_cache.install_cache('ranbooru_cache', backend='sqlite', expire_after=3600)
@@ -903,6 +945,47 @@ class Script(scripts.Script):
                 if use_img2img:
                     if len(last_img) < p.batch_size * p.n_iter:
                         last_img = [last_img[0] for _ in range(0, p.batch_size * p.n_iter)]
+
+            # --- BEGIN NEW FORBIDDEN PROMPT TAGS FILTERING ---
+            final_forbidden_tags = set() # Use a set for efficient lookup
+
+            # Process tags from the manual textbox input
+            if forbidden_prompt_tags_text:
+                manual_forbidden = [tag.strip().lower() for tag in forbidden_prompt_tags_text.split(',') if tag.strip()]
+                final_forbidden_tags.update(manual_forbidden)
+
+            # Process tags from the file if enabled
+            if use_forbidden_prompt_txt and choose_forbidden_prompt_txt:
+                forbidden_file_path = os.path.join(user_forbidden_prompt_dir, choose_forbidden_prompt_txt)
+                if os.path.exists(forbidden_file_path):
+                    with open(forbidden_file_path, 'r') as f:
+                        file_forbidden = [line.strip().lower() for line in f if line.strip()]
+                    final_forbidden_tags.update(file_forbidden)
+
+            if final_forbidden_tags:
+                # Determine if p.prompt is a list (batch processing) or a single string
+                if isinstance(p.prompt, list):
+                    processed_prompts = []
+                    for current_prompt_str in p.prompt:
+                        prompt_tags_list = [tag.strip() for tag in current_prompt_str.split(',')]
+                        # Filter out forbidden tags, being careful about case by comparing lowercase
+                        # but keeping original case for non-forbidden tags.
+                        # A more robust way is to build a new list of tags.
+                        kept_tags = []
+                        for tag in prompt_tags_list:
+                            if tag.strip().lower() not in final_forbidden_tags:
+                                kept_tags.append(tag.strip()) # Keep original casing, but stripped
+                        processed_prompts.append(','.join(kept_tags))
+                    p.prompt = processed_prompts
+                elif isinstance(p.prompt, str): # Single prompt string
+                    prompt_tags_list = [tag.strip() for tag in p.prompt.split(',')]
+                    kept_tags = []
+                    for tag in prompt_tags_list:
+                        if tag.strip().lower() not in final_forbidden_tags:
+                            kept_tags.append(tag.strip())
+                    p.prompt = ','.join(kept_tags)
+            # --- END NEW FORBIDDEN PROMPT TAGS FILTERING ---
+
             if negative_mode == 'Negative':
                 # remove tags from p.prompt using tags from the original prompt
                 orig_list = self.original_prompt.split(',')

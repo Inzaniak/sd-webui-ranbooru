@@ -13,6 +13,12 @@ The extension is now divided into two main functionalities that can be used toge
 This is the main part of the extension. It gets a random set of tags from boorus pictures.  
 Here's an explanation of all the parameters:
 - **Booru**: The booru to get the tags from. Right now Gelbooru, Rule34, Safebooru, yande.re, konachan, aibooru, danbooru and xbooru are implemented. You can easily add more creating a class for the booru and adding it to the booru list in the script.
+
+### ⚠️ Gelbooru API Credentials Required
+As of June 2025, Gelbooru requires an API key and user ID to access its API. When you select Gelbooru in the Ranbooru panel, you will see fields to enter your API key and user ID. You can optionally save these credentials securely to disk. If credentials are saved, the input fields will be hidden and a message will display the path to the credentials file. You can clear the saved credentials at any time to re-enter new ones.
+
+- **API Key & User ID (Gelbooru only)**: Required to use Gelbooru. You can obtain these from your Gelbooru account settings. If credentials are saved, the UI will show a status message and hide the input fields for security.
+
 - **Max Pages**: The maximum amount of pages to get the tags from. The extension will get a random page from the booru and then get the tags from one or more random pictures from that page.
 - **Post ID**: Here you can specify the ID of the post to get the tags from. If you leave it blank, the extension will get a random post (or more than one) from the random page.
 - **Tags to Search (Pre)**: This add the tags you define (this should be separated by commas e.g: 1girl,solo,short_hair) to the search query. This is useful if you want to get tags from a specific category, like "1girl" or "solo".

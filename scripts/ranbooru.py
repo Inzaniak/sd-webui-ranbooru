@@ -15,13 +15,19 @@ from modules import shared
 from modules.sd_hijack import model_hijack
 from modules import deepbooru
 from modules.ui_components import InputAccordion
+from credentials_manager import CredentialsManager
 
 extension_root = scripts.basedir()
 user_data_dir = os.path.join(extension_root, 'user')
 user_search_dir = os.path.join(user_data_dir, 'search')
 user_remove_dir = os.path.join(user_data_dir, 'remove')
+user_credentials_dir = os.path.join(user_data_dir, 'credentials')
 os.makedirs(user_search_dir, exist_ok=True)
 os.makedirs(user_remove_dir, exist_ok=True)
+os.makedirs(user_credentials_dir, exist_ok=True)
+
+# Initialize credentials manager
+credentials_manager = CredentialsManager(extension_root)
 
 if not os.path.isfile(os.path.join(user_search_dir, 'tags_search.txt')):
     with open(os.path.join(user_search_dir, 'tags_search.txt'), 'w'):
@@ -108,9 +114,11 @@ class Booru():
 
 class Gelbooru(Booru):
 
-    def __init__(self, fringe_benefits):
+    def __init__(self, fringe_benefits, api_key=None, user_id=None):
         super().__init__('gelbooru', f'https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit={POST_AMOUNT}')
         self.fringeBenefits = fringe_benefits
+        self.api_key = api_key
+        self.user_id = user_id
 
     def get_data(self, add_tags, max_pages=10, id=''):
         global COUNT
@@ -118,7 +126,13 @@ class Gelbooru(Booru):
         for loop in range(2): # run loop at most twice
             if id:
                 add_tags = ''
-            self.booru_url = f"{self.booru_url}&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
+            
+            # Build the API URL with credentials if available
+            api_params = f"&pid={random.randint(0, max_pages-1)}{id}{add_tags}"
+            if self.api_key and self.user_id:
+                api_params += f"&api_key={self.api_key}&user_id={self.user_id}"
+            
+            self.booru_url = f"{self.booru_url}{api_params}"
             # The randint function is an alias to randrange(a, b+1), so 'max_pages' should be passed as 'max_pages-1'
             if self.fringeBenefits:
                 res = requests.get(self.booru_url, cookies={'fringeBenefits': 'yup'})
@@ -577,35 +591,124 @@ class Script(scripts.Script):
     def show(self, is_img2img):
         return scripts.AlwaysVisible
 
+    def show_gelbooru_api_fields(self, booru):
+        """Show/hide API key fields based on selected booru"""
+        if booru == 'gelbooru':
+            return gr.update(visible=True)
+        else:
+            return gr.update(visible=False)
+    
+    def load_gelbooru_credentials(self, booru):
+        """Load saved credentials for Gelbooru"""
+        if booru == 'gelbooru':
+            credentials = credentials_manager.get_booru_credentials('gelbooru')
+            api_key = credentials.get('api_key', '')
+            user_id = credentials.get('user_id', '')
+            has_saved_creds = credentials_manager.has_credentials('gelbooru')
+            
+            if has_saved_creds:
+                # Hide input fields and show file path
+                credentials_file_path = credentials_manager.credentials_file
+                status_text = f"✓ Credentials loaded from: {credentials_file_path}"
+                return (
+                    gr.update(visible=False),  # api_key field
+                    gr.update(visible=False),  # user_id field  
+                    gr.update(visible=True, value=status_text),  # credentials_status
+                    gr.update(visible=True, value="Clear saved credentials")  # clear_credentials_btn
+                )
+            else:
+                # Show input fields
+                return (
+                    gr.update(visible=True, value=api_key),  # api_key field
+                    gr.update(visible=True, value=user_id),  # user_id field
+                    gr.update(visible=False, value=""),  # credentials_status
+                    gr.update(visible=False)  # clear_credentials_btn
+                )
+        else:
+            return (
+                gr.update(visible=False, value=""),  # api_key field
+                gr.update(visible=False, value=""),  # user_id field
+                gr.update(visible=False, value=""),  # credentials_status
+                gr.update(visible=False)  # clear_credentials_btn
+            )
+    
+    def clear_gelbooru_credentials(self):
+        """Clear saved Gelbooru credentials"""
+        credentials_manager.clear_booru_credentials('gelbooru')
+        return (
+            gr.update(visible=True, value=""),  # api_key field
+            gr.update(visible=True, value=""),  # user_id field  
+            gr.update(visible=False, value=""),  # credentials_status
+            gr.update(visible=False)  # clear_credentials_btn
+        )
+
+    def save_gelbooru_credentials(self, booru, api_key, user_id, save_credentials):
+        """Save Gelbooru credentials if checkbox is checked"""
+        if booru == 'gelbooru' and save_credentials and api_key.strip() and user_id.strip():
+            credentials_manager.save_booru_credentials('gelbooru', api_key.strip(), user_id.strip())
+            return "✓ Credentials saved"
+        elif booru == 'gelbooru' and not save_credentials:
+            # Optionally clear credentials if save is unchecked
+            return "Credentials will not be saved"
+        return ""
+
     def refresh_ser(self):
         return gr.update(choices=self.get_files(user_search_dir))
     def refresh_rem(self):
         return gr.update(choices=self.get_files(user_remove_dir))
 
     def ui(self, is_img2img):
+        # Determine initial Gelbooru credential visibility based on saved credentials
+        has_saved = credentials_manager.has_credentials('gelbooru')
+        saved_creds = credentials_manager.get_booru_credentials('gelbooru') if has_saved else {}
+        initial_api_key_visible = not has_saved
+        initial_user_id_visible = not has_saved
+        initial_status_visible = has_saved
+        initial_status_value = f"✓ Credentials loaded from: {credentials_manager.credentials_file}" if has_saved else ""
+        initial_clear_visible = has_saved
+        
         with InputAccordion(False, label="Ranbooru", elem_id=self.elem_id("ra_enable")) as enabled:
             booru = gr.Dropdown(
-                ["gelbooru", "rule34", "safebooru", "danbooru", "konachan", 'yande.re', 'aibooru', 'xbooru', 'e621'], label="Booru", value="gelbooru")
+                ["safebooru", "rule34", "danbooru", "gelbooru", "konachan", 'yande.re', 'aibooru', 'xbooru', 'e621'], label="Booru", value="safebooru")
             max_pages = gr.Slider(label="Max Pages", minimum=1, maximum=100, value=100, step=1)
             gr.Markdown("""## Post""")
             post_id = gr.Textbox(lines=1, label="Post ID")
             gr.Markdown("""## Tags""")
             tags = gr.Textbox(lines=1, label="Tags to Search (Pre)")
             remove_tags = gr.Textbox(lines=1, label="Tags to Remove (Post)")
-            mature_rating = gr.Radio(list(RATINGS['gelbooru']), label="Mature Rating", value="All")
+            mature_rating = gr.Radio(list(RATINGS['safebooru']), label="Mature Rating", value="All")
             remove_bad_tags = gr.Checkbox(label="Remove bad tags", value=True)
             shuffle_tags = gr.Checkbox(label="Shuffle tags", value=True)
             change_dash = gr.Checkbox(label='Convert "_" to spaces', value=False)
             same_prompt = gr.Checkbox(label="Use same prompt for all images", value=False)
-            fringe_benefits = gr.Checkbox(label="Fringe Benefits", value=True)
+            fringe_benefits = gr.Checkbox(label="Fringe Benefits", value=True)            # API credentials for Gelbooru
+            with gr.Group(visible=True) as gelbooru_credentials_group:
+                gr.Markdown("### Gelbooru API Credentials")
+                api_key = gr.Textbox(
+                    lines=1, label="API Key", placeholder="Enter your Gelbooru API key",
+                    type="password", visible=initial_api_key_visible, value=saved_creds.get('api_key', '')
+                )
+                user_id = gr.Textbox(
+                    lines=1, label="User ID", placeholder="Enter your Gelbooru user ID",
+                    visible=initial_user_id_visible, value=saved_creds.get('user_id', '')
+                )
+                save_credentials = gr.Checkbox(label="Save credentials", value=False, visible=True)
+                credentials_status = gr.Textbox(
+                    label="Status", interactive=False,
+                    visible=True, value=initial_status_value
+                )
+                clear_credentials_btn = gr.Button(
+                    "Clear saved credentials", visible=initial_clear_visible
+                )
+            
             limit_tags = gr.Slider(value=1.0, label="Limit tags", minimum=0.05, maximum=1.0, step=0.05)
             max_tags = gr.Slider(value=100, label="Max tags", minimum=1, maximum=100, step=1)
             change_background = gr.Radio(["Don't Change", "Add Background", "Remove Background", "Remove All"], label="Change Background", value="Don't Change")
             change_color = gr.Radio(["Don't Change", "Colored", "Limited Palette", "Monochrome"], label="Change Color", value="Don't Change")
-            sorting_order = gr.Radio(["Random", "High Score", "Low Score"], label="Sorting Order", value="Random")
-
+            sorting_order = gr.Radio(["Random", "High Score", "Low Score"], label="Sorting Order", value="Random")            
             booru.change(get_available_ratings, booru, mature_rating)  # update available ratings
             booru.change(show_fringe_benefits, booru, fringe_benefits)  # display fringe benefits checkbox if gelbooru is selected
+            booru.change(self.show_gelbooru_api_fields, booru, gelbooru_credentials_group)  # show/hide gelbooru credentials group
 
             gr.Markdown("""\n---\n""")
             with gr.Group():
@@ -660,7 +763,21 @@ class Script(scripts.Script):
             outputs=[choose_remove_txt]
         )
 
-        return [enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache]
+        # Event handler for loading credentials when booru changes
+        booru.change(
+            fn=self.load_gelbooru_credentials,
+            inputs=[booru],
+            outputs=[api_key, user_id, credentials_status, clear_credentials_btn]
+        )
+
+        # Event handler for clearing credentials
+        clear_credentials_btn.click(
+            fn=self.clear_gelbooru_credentials,
+            inputs=[],
+            outputs=[api_key, user_id, credentials_status, clear_credentials_btn]
+        )
+
+        return [enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache, api_key, user_id, save_credentials, credentials_status, clear_credentials_btn]
 
     def check_orientation(self, img):
         """Check if image is portrait, landscape or square"""
@@ -698,16 +815,35 @@ class Script(scripts.Script):
                 p.prompt = f'{lora_prompt} {p.prompt}'
         return p
 
-    def before_process(self, p, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache):
-        # Manage Cache
+    def before_process(self, p, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache, api_key, user_id, save_credentials, credentials_status, clear_credentials_btn):        # Manage Cache
         if use_cache and not requests_cache.patcher.is_installed():
             requests_cache.install_cache('ranbooru_cache', backend='sqlite', expire_after=3600)
         elif not use_cache and requests_cache.patcher.is_installed():
             requests_cache.uninstall_cache()
+        
         if enabled:
+            # Handle Gelbooru credentials
+            gelbooru_api_key = None
+            gelbooru_user_id = None
+            
+            if booru == 'gelbooru':
+                # Use provided credentials or load from saved credentials
+                if api_key.strip() and user_id.strip():
+                    gelbooru_api_key = api_key.strip()
+                    gelbooru_user_id = user_id.strip()
+                    
+                    # Save credentials if checkbox is checked
+                    if save_credentials:
+                        credentials_manager.save_booru_credentials('gelbooru', gelbooru_api_key, gelbooru_user_id)
+                else:
+                    # Try to load saved credentials
+                    saved_credentials = credentials_manager.get_booru_credentials('gelbooru')
+                    gelbooru_api_key = saved_credentials.get('api_key', '')
+                    gelbooru_user_id = saved_credentials.get('user_id', '')
+            
             # Initialize APIs
             booru_apis = {
-                'gelbooru': Gelbooru(fringe_benefits),
+                'gelbooru': Gelbooru(fringe_benefits, gelbooru_api_key, gelbooru_user_id),
                 'rule34': Rule34(),
                 'safebooru': Safebooru(),
                 'danbooru': Danbooru(),
@@ -965,7 +1101,7 @@ class Script(scripts.Script):
         elif lora_enabled:
             p = self.loranado(lora_enabled, lora_folder, lora_amount, lora_min, lora_max, lora_custom_weights, p, lora_lock_prev)
 
-    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache):
+    def postprocess(self, p, processed, enabled, tags, booru, remove_bad_tags, max_pages, change_dash, same_prompt, fringe_benefits, remove_tags, use_img2img, denoising, use_last_img, change_background, change_color, shuffle_tags, post_id, mix_prompt, mix_amount, chaos_mode, negative_mode, chaos_amount, limit_tags, max_tags, sorting_order, mature_rating, lora_folder, lora_amount, lora_min, lora_max, lora_enabled, lora_custom_weights, lora_lock_prev, use_ip, use_search_txt, use_remove_txt, choose_search_txt, choose_remove_txt, search_refresh_btn, remove_refresh_btn, crop_center, use_deepbooru, type_deepbooru, use_same_seed, use_cache, api_key, user_id, save_credentials, credentials_status, clear_credentials_btn):
         if use_img2img and not use_ip and enabled:
             print('Using pictures')
             if crop_center:

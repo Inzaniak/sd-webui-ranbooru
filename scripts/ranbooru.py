@@ -9,13 +9,13 @@ from PIL import Image
 import numpy as np
 import importlib
 import requests_cache
+import json
 
 from modules.processing import process_images, StableDiffusionProcessingImg2Img
 from modules import shared
 from modules.sd_hijack import model_hijack
 from modules import deepbooru
 from modules.ui_components import InputAccordion
-from credentials_manager import CredentialsManager
 
 extension_root = scripts.basedir()
 user_data_dir = os.path.join(extension_root, 'user')
@@ -27,6 +27,62 @@ os.makedirs(user_remove_dir, exist_ok=True)
 os.makedirs(user_credentials_dir, exist_ok=True)
 
 # Initialize credentials manager
+class CredentialsManager:
+    def __init__(self, extension_root):
+        self.extension_root = extension_root
+        self.credentials_dir = os.path.join(extension_root, 'user', 'credentials')
+        self.credentials_file = os.path.join(self.credentials_dir, 'credentials.json')
+        
+        # Create credentials directory if it doesn't exist
+        os.makedirs(self.credentials_dir, exist_ok=True)
+        
+        # Initialize credentials file if it doesn't exist
+        if not os.path.exists(self.credentials_file):
+            self._save_credentials({})
+    
+    def _load_credentials(self):
+        """Load credentials from the JSON file"""
+        try:
+            with open(self.credentials_file, 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
+    
+    def _save_credentials(self, credentials):
+        """Save credentials to the JSON file"""
+        with open(self.credentials_file, 'w') as f:
+            json.dump(credentials, f, indent=2)
+    
+    def save_booru_credentials(self, booru_name, api_key, user_id=None):
+        """Save API credentials for a specific booru"""
+        credentials = self._load_credentials()
+        
+        if booru_name not in credentials:
+            credentials[booru_name] = {}
+        
+        credentials[booru_name]['api_key'] = api_key
+        if user_id is not None:
+            credentials[booru_name]['user_id'] = user_id
+        
+        self._save_credentials(credentials)
+    
+    def get_booru_credentials(self, booru_name):
+        """Get API credentials for a specific booru"""
+        credentials = self._load_credentials()
+        return credentials.get(booru_name, {})
+    
+    def has_credentials(self, booru_name):
+        """Check if credentials exist for a specific booru"""
+        credentials = self.get_booru_credentials(booru_name)
+        return 'api_key' in credentials and credentials['api_key'].strip() != ''
+    
+    def clear_booru_credentials(self, booru_name):
+        """Clear credentials for a specific booru"""
+        credentials = self._load_credentials()
+        if booru_name in credentials:
+            del credentials[booru_name]
+            self._save_credentials(credentials)
+
 credentials_manager = CredentialsManager(extension_root)
 
 if not os.path.isfile(os.path.join(user_search_dir, 'tags_search.txt')):
